@@ -1,0 +1,5 @@
+.build/
+build/
+build-log.txt
+.DS_Store
+.swiftpm/
