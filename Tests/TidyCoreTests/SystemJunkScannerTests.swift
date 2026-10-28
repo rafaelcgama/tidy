@@ -49,6 +49,17 @@ final class SystemJunkScannerTests: XCTestCase {
                        "anything written in the last 30 days counts as in use, even deep inside")
     }
 
+    func testSimulatorCachesAreCleanedLikeOtherCaches() async throws {
+        try write("Library/Developer/CoreSimulator/Caches/dyld/22A3354/dyld_sim_shared_cache_arm64e")
+        try write("Library/Developer/CoreSimulator/Caches/fresh/blob")
+        try FileManager.default.backdate(home.appendingPathComponent("Library/Developer/CoreSimulator/Caches/dyld"), days: 45)
+        let scanner = SystemJunkScanner(locations: SystemJunkScanner.defaultLocations(home: home))
+        let items = try await scanner.scan { _ in }
+        let selected = Dictionary(uniqueKeysWithValues: items.map { ($0.url.lastPathComponent, $0.isSelected) })
+        XCTAssertEqual(selected, ["dyld": true, "fresh": false])
+        XCTAssertTrue(items.allSatisfy { $0.category == "Simulator caches" })
+    }
+
     func testArchivesAndTrashAreNotPreselected() async throws {
         try write("Library/Developer/Xcode/Archives/2026-10-01/App.xcarchive/Info.plist")
         try write(".Trash/old.zip")

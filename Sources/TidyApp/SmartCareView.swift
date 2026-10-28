@@ -122,7 +122,7 @@ struct SmartCareView: View {
                         Text("No junk to clean.")
                             .foregroundStyle(.secondary)
                     } else {
-                        Text("\(ByteFormat.string(report.selectedCleanup.totalSize)) of caches, logs and build files in \(report.selectedCleanup.count) items.")
+                        Text("\(ByteFormat.string(report.selectedCleanup.totalSize)) of caches, logs, build files and other junk in \(report.selectedCleanup.count) items.")
                         HStack {
                             Button("Review & Clean…") { reviewing = report }
                                 .keyboardShortcut(.defaultAction)

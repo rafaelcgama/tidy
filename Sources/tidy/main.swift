@@ -19,7 +19,7 @@ usage: tidy scan                 list system junk and its size
        tidy restore <batch-id>   put a quarantined batch back where it came from
 """
 
-let scanner = SystemJunkScanner(locations: SystemJunkScanner.defaultLocations() + SystemJunkScanner.systemLocations)
+let scanner = CombinedScanner.systemJunk()
 let store = QuarantineStore(root: QuarantineStore.defaultRoot)
 /// What the app's admin helper moved. Readable here; only the app can put it back, through the helper.
 let systemStore = QuarantineStore(root: QuarantineStore.systemRoot)
@@ -29,7 +29,8 @@ func printGroups(_ items: [ScanItem]) {
         print("\(group.category)  \(ByteFormat.string(group.totalSize))  (\(group.items.count) items)")
         for item in group.items {
             let mark = item.isSelected ? "*" : " "
-            print("  \(mark) \(ByteFormat.string(item.size).padding(toLength: 10, withPad: " ", startingAt: 0)) \(item.url.path)")
+            print("  \(mark) \(ByteFormat.string(item.size).padding(toLength: 10, withPad: " ", startingAt: 0)) \(item.url.path)"
+                  + (item.label.map { "  (\($0))" } ?? ""))
         }
     }
 }

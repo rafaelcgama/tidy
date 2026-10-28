@@ -54,7 +54,7 @@ struct ContentView: View {
     @ObservedObject var navigation: AppNavigation
     @StateObject private var smartCare = SmartCareModel()
     @StateObject private var systemJunk = ScanCleanModel { _ in
-        let scanner = SystemJunkScanner(locations: SystemJunkScanner.defaultLocations() + SystemJunkScanner.systemLocations)
+        let scanner = CombinedScanner.systemJunk()
         return (scanner, scanner.safePaths)
     }
     @StateObject private var developer = ScanCleanModel(roots: [ContentView.defaultProjectsFolder]) { roots in
@@ -91,8 +91,10 @@ struct ContentView: View {
                 ScanCleanView(model: systemJunk,
                               copy: .init(title: "System Junk",
                                           symbol: "trash.circle",
-                                          blurb: "Find caches, logs, Xcode build files and other junk.",
-                                          note: "Caches an app wrote to in the last 30 days aren't selected: they keep it fast, and removing them only means the app rebuilds them."))
+                                          blurb: "Find caches, logs, Xcode build files and simulators, old macOS installers, iPhone and iPad backups and other junk.",
+                                          note: "Caches an app wrote to in the last 30 days aren't selected: they keep it fast, and removing them only means the app rebuilds them. "
+                                              + "Installers for the macOS you run or an older one are selected, since Apple lets you download them again, and so are simulators Xcode can no longer run. "
+                                              + "Backups are never selected, and Tidy needs Full Disk Access to see them."))
             case .some(.developer):
                 ScanCleanView(model: developer,
                               copy: .init(title: "Developer",
