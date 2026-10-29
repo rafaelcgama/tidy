@@ -2,29 +2,48 @@ import AppKit
 import SwiftUI
 import TidyCore
 
+/// How busy the Mac is, the switches for what starts with it, and the maintenance tasks, in one place.
 struct PerformanceView: View {
     @ObservedObject var monitor: SystemMonitor
+    @ObservedObject var model: OptimizationModel
     @Binding var selection: Module?
     @AppStorage("showMenuBarMonitor") private var showMenuBarMonitor = true
+    @AppStorage("readLoginApps") private var readLoginApps = false
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: 22) {
                 tiles
                 suggestions
-                processList
-                Suggestion(symbol: "bolt", tint: .accentColor,
-                           text: "Switch off apps and background items that start with your Mac, and run maintenance tasks, in Optimization.",
-                           actionTitle: "Open Optimization") { selection = .optimization }
+                Text("Fewer things starting with your Mac means a faster startup and more free memory all day. Switching something off doesn't delete it: switch it back on any time.")
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                StartupItems(model: model)
+                PerformanceSection(title: "Maintenance", symbol: "wrench.and.screwdriver") {
+                    MaintenanceTasks()
+                }
             }
             .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .navigationTitle("Performance")
         .toolbar {
             Toggle("Show in Menu Bar", isOn: $showMenuBarMonitor)
+            Button("Refresh") {
+                model.refresh()
+                if readLoginApps { model.loadLoginApps() }
+            }
+            .disabled(model.isLoading)
         }
-        .onAppear { monitor.watchProcesses() }
-        .onDisappear { monitor.stopWatchingProcesses() }
+        .alert("Something went wrong", isPresented: errorShown) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(model.errorMessage ?? "")
+        }
+    }
+
+    private var errorShown: Binding<Bool> {
+        Binding(get: { model.errorMessage != nil }, set: { if !$0 { model.errorMessage = nil } })
     }
 
     private var tiles: some View {
@@ -35,7 +54,7 @@ struct PerformanceView: View {
                     .frame(height: 28)
             }
             StatTile(title: "Memory",
-                     value: monitor.memory.map { "\(StatFormat.bytes($0.used)) of \(StatFormat.bytes($0.total))" } ?? "–",
+                     value: monitor.memory.map { "\(StatFormat.memory($0.used)) of \(StatFormat.memory($0.total))" } ?? "–",
                      detail: memoryDetail, fraction: monitor.memory?.usedFraction) { EmptyView() }
             StatTile(title: "Startup Disk",
                      value: monitor.disk.map { "\(ByteFormat.string($0.available)) free" } ?? "–",
@@ -49,7 +68,7 @@ struct PerformanceView: View {
     private var memoryDetail: String {
         guard let memory = monitor.memory else { return "" }
         switch memory.pressure {
-        case .normal: return "Pressure normal · \(StatFormat.bytes(memory.cached)) cached files"
+        case .normal: return "Pressure normal · \(StatFormat.memory(memory.cached)) cached files"
         case .warning: return "Pressure high"
         case .critical: return "Pressure critical"
         }
@@ -65,25 +84,6 @@ struct PerformanceView: View {
             Suggestion(symbol: "internaldrive", tint: .orange,
                        text: "Your startup disk is almost full, which slows macOS down.",
                        actionTitle: "Free Up Space…") { selection = .smartCare }
-        }
-    }
-
-    private var processList: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Busiest Processes")
-                .font(.headline)
-            if monitor.processes.isEmpty {
-                ProgressView()
-                    .frame(maxWidth: .infinity)
-            } else {
-                ForEach(monitor.processes.prefix(12)) { process in
-                    ProcessRow(process: process, app: monitor.app(for: process.pid))
-                    Divider()
-                }
-                Text("CPU is a percentage of one core, so busy apps can pass 100%. Processes of other users and the system aren't listed.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
         }
     }
 }
@@ -140,40 +140,5 @@ private struct Suggestion: View {
         }
         .padding(10)
         .background(RoundedRectangle(cornerRadius: 8).fill(tint.opacity(0.1)))
-    }
-}
-
-struct ProcessRow: View {
-    let process: ProcessLoad
-    let app: NSRunningApplication?
-
-    var body: some View {
-        HStack(spacing: 10) {
-            if let icon = app?.icon {
-                Image(nsImage: icon)
-                    .resizable()
-                    .frame(width: 20, height: 20)
-            } else {
-                Image(systemName: "gearshape")
-                    .frame(width: 20, height: 20)
-                    .foregroundStyle(.secondary)
-            }
-            Text(app?.localizedName ?? process.name)
-                .lineLimit(1)
-            Spacer()
-            Text(String(format: "%.1f%%", process.cpuPercent))
-                .monospacedDigit()
-                .frame(width: 64, alignment: .trailing)
-            Text(StatFormat.bytes(process.memory))
-                .monospacedDigit()
-                .foregroundStyle(.secondary)
-                .frame(width: 80, alignment: .trailing)
-            if let app, app.activationPolicy == .regular, app.processIdentifier != ProcessInfo.processInfo.processIdentifier {
-                Button("Quit") { app.terminate() }
-                    .help("Quits the app the normal way; it asks to save anything unsaved.")
-            } else {
-                Color.clear.frame(width: 44, height: 1)
-            }
-        }
     }
 }

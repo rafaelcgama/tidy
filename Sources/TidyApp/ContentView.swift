@@ -12,7 +12,6 @@ enum Module: String, CaseIterable, Identifiable {
     case malware = "Malware Scan"
     case privacy = "Privacy"
     case shredder = "Shredder"
-    case optimization = "Optimization"
     case performance = "Performance"
     case spaceMap = "Space Map"
     case quarantine = "Quarantine"
@@ -31,7 +30,6 @@ enum Module: String, CaseIterable, Identifiable {
         case .malware: return "ladybug"
         case .privacy: return "hand.raised"
         case .shredder: return "scissors"
-        case .optimization: return "bolt"
         case .performance: return "speedometer"
         case .spaceMap: return "chart.pie"
         case .quarantine: return "arrow.uturn.backward.circle"
@@ -109,10 +107,8 @@ struct ContentView: View {
                                           emptyMessage: "No browsing data found."))
             case .some(.shredder):
                 ShredderView(model: shredder)
-            case .some(.optimization):
-                OptimizationView(model: optimization, monitor: monitor)
             case .some(.performance):
-                PerformanceView(monitor: monitor, selection: $navigation.module)
+                PerformanceView(monitor: monitor, model: optimization, selection: $navigation.module)
             case .some(.spaceMap):
                 SpaceMapView(model: spaceMap)
             case .some(.quarantine):
