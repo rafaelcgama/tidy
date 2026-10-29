@@ -37,8 +37,10 @@ struct MenuBarMonitorView: View {
             if let release = tidy.available {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Tidy \(release.version) is available.")
-                    Button("Update Tidy") { tidy.install() }
-                        .disabled(!tidy.canInstall || tidy.phase != .idle)
+                    Button("Update Tidy…") {
+                        openWindow(id: TidyUpdateWindow.id)
+                        NSApp.activate(ignoringOtherApps: true)
+                    }
                 }
                 .padding(8)
                 .frame(maxWidth: .infinity, alignment: .leading)

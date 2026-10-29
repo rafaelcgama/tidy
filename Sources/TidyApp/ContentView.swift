@@ -56,9 +56,6 @@ struct ContentView: View {
                     .tag(module)
             }
             .navigationSplitViewColumnWidth(min: 180, ideal: 200)
-            .safeAreaInset(edge: .bottom) {
-                TidyUpdateFooter(model: TidyUpdateModel.shared)
-            }
         } detail: {
             switch navigation.module {
             case .some(.smartCare):

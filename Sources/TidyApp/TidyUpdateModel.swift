@@ -142,58 +142,111 @@ enum TidyInstaller {
     }
 }
 
-/// The bottom of the sidebar: Tidy's version, and the button that checks for and installs a new one.
-struct TidyUpdateFooter: View {
+/// Check for Updates…, for the Tidy and Help menus: checks, and shows the answer in the Software Update window.
+struct CheckForUpdatesButton: View {
+    @Environment(\.openWindow) private var openWindow
+
+    var body: some View {
+        Button("Check for Updates…") {
+            TidyUpdateModel.shared.check()
+            openWindow(id: TidyUpdateWindow.id)
+            NSApp.activate(ignoringOtherApps: true)
+        }
+    }
+}
+
+/// The Software Update window, laid out like other Mac apps': what's new, and Install Update.
+struct TidyUpdateWindow: View {
+    static let id = "software-update"
     @ObservedObject var model: TidyUpdateModel
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Divider()
-            Text(status)
-                .font(.caption)
+        HStack(alignment: .top, spacing: 16) {
+            Image(nsImage: NSApp.applicationIconImage)
+                .resizable()
+                .frame(width: 64, height: 64)
+            VStack(alignment: .leading, spacing: 10) {
+                content
+            }
+            .frame(width: 380, alignment: .leading)
+        }
+        .padding(20)
+    }
+
+    /// The window is the key one when its button is clicked; `dismiss` only closes windows from macOS 14 on.
+    private func close() {
+        NSApp.keyWindow?.close()
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        switch model.phase {
+        case .checking:
+            Text("Checking for updates…")
+                .font(.headline)
+            ProgressView()
+                .progressViewStyle(.linear)
+        case .downloading, .installing:
+            Text(model.phase == .downloading ? "Downloading update…" : "Installing update…")
+                .font(.headline)
+            ProgressView()
+                .progressViewStyle(.linear)
+            Text("Tidy will quit and open again when it's done.")
                 .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-            switch model.phase {
-            case .checking, .downloading, .installing:
-                HStack(spacing: 6) {
-                    ProgressView()
-                        .controlSize(.small)
-                    Text(model.phase == .checking ? "Checking…" : model.phase == .downloading ? "Downloading…" : "Installing…")
-                        .font(.caption)
+        case .idle:
+            if let error = model.errorMessage {
+                Text("Something went wrong")
+                    .font(.headline)
+                Text(error)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                HStack {
+                    Spacer()
+                    Button("OK") {
+                        model.errorMessage = nil
+                        close()
+                    }
+                    .keyboardShortcut(.defaultAction)
                 }
-            case .idle:
-                if let release = model.available {
-                    Button("Update to \(release.version)") { model.install() }
-                        .disabled(!model.canInstall)
-                        .help(model.canInstall ? "Downloads the new Tidy, replaces this one and opens it again." : "Only the Tidy installed in Applications can update itself.")
-                    Button("What's New") { model.openReleasePage() }
-                        .buttonStyle(.link)
+            } else if let release = model.available {
+                Text("A new version of Tidy is available!")
+                    .font(.headline)
+                Text("Tidy \(release.version) is now available. You have \(model.installedVersion ?? "a development copy"). Would you like to install it now?")
+                    .fixedSize(horizontal: false, vertical: true)
+                if !release.notes.isEmpty {
+                    Text("Release Notes:")
+                        .bold()
+                    ScrollView {
+                        Text(release.notes)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(8)
+                    }
+                    .frame(height: 140)
+                    .background(RoundedRectangle(cornerRadius: 6).fill(Color.secondary.opacity(0.08)))
+                }
+                if !model.canInstall {
+                    Text("Only the Tidy installed in Applications can update itself.")
                         .font(.caption)
-                } else {
-                    Button("Check for Updates") { model.check() }
+                        .foregroundStyle(.secondary)
+                }
+                HStack {
+                    Button("Remind Me Later") { close() }
+                    Spacer()
+                    Button("Install Update") { model.install() }
+                        .keyboardShortcut(.defaultAction)
+                        .disabled(!model.canInstall)
+                }
+            } else {
+                Text("You're up to date!")
+                    .font(.headline)
+                Text("Tidy \(model.installedVersion ?? "") is the newest version available.")
+                    .foregroundStyle(.secondary)
+                HStack {
+                    Spacer()
+                    Button("OK") { close() }
+                        .keyboardShortcut(.defaultAction)
                 }
             }
         }
-        .controlSize(.small)
-        .padding(.horizontal, 12)
-        .padding(.bottom, 10)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .alert("Something went wrong", isPresented: errorShown) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text(model.errorMessage ?? "")
-        }
-    }
-
-    private var status: String {
-        let name = model.installedVersion.map { "Tidy \($0)" } ?? "Tidy (in development)"
-        if model.phase == .installing { return "Tidy will reopen when it's done." }
-        if let release = model.available { return "Tidy \(release.version) is available. You have \(model.installedVersion ?? "a development copy")." }
-        return model.hasChecked && model.phase == .idle ? "\(name) · Up to date" : name
-    }
-
-    private var errorShown: Binding<Bool> {
-        Binding(get: { model.errorMessage != nil },
-                set: { if !$0 { model.errorMessage = nil } })
     }
 }

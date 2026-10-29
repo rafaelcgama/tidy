@@ -7,6 +7,8 @@ struct SmartCareView: View {
     @ObservedObject var model: SmartCareModel
     @ObservedObject var reminders: ReminderModel
     @Binding var selection: Module?
+    @ObservedObject var tidy = TidyUpdateModel.shared
+    @Environment(\.openWindow) private var openWindow
     @State private var reviewing: SmartCareReport?
 
     var body: some View {
@@ -61,6 +63,16 @@ struct SmartCareView: View {
                     Text("Last scan: \(reminders.lastScanText(.smartCare))")
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                }
+                // Found by the check when Tidy starts; nothing installs until you choose to.
+                if let release = tidy.available {
+                    HStack {
+                        Image(systemName: "arrow.down.circle")
+                        Text("Tidy \(release.version) is available.")
+                        Button("Update Tidy…") { openWindow(id: TidyUpdateWindow.id) }
+                    }
+                    .padding(10)
+                    .background(RoundedRectangle(cornerRadius: 8).fill(Color.accentColor.opacity(0.1)))
                 }
                 ForEach(reminders.due) { due in
                     HStack {

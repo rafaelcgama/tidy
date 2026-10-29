@@ -32,10 +32,16 @@ struct TidyApp: App {
         }
         .commands {
             CommandGroup(after: .appInfo) {
-                // The answer shows at the bottom of the sidebar.
-                Button("Check for Updates…") { TidyUpdateModel.shared.check() }
+                CheckForUpdatesButton()
+            }
+            CommandGroup(after: .help) {
+                CheckForUpdatesButton()
             }
         }
+        Window("Software Update", id: TidyUpdateWindow.id) {
+            TidyUpdateWindow(model: TidyUpdateModel.shared)
+        }
+        .windowResizability(.contentSize)
         Settings {
             SettingsView(reminders: reminders)
         }
