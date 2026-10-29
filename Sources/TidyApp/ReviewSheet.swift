@@ -34,7 +34,8 @@ struct ReviewSheet: View {
                                 .foregroundStyle(.secondary)
                                 .help("Needs administrator rights")
                         }
-                        Text(item.url.path)
+                        // The label says which device a simulator is; the path is what moves.
+                        Text(item.label.map { "\($0): \(item.url.path)" } ?? item.url.path)
                             .lineLimit(1)
                             .truncationMode(.middle)
                             .help(item.url.path)

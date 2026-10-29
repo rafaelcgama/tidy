@@ -5,7 +5,7 @@ import TidyCore
 /// Scan → review → move to quarantine → undo, for any scanner whose items are listed by category.
 @MainActor
 final class ScanCleanModel: ObservableObject {
-    typealias MakeScanner = ([URL]) -> (scanner: any TidyCore.Scanner, safePaths: SafePaths)
+    typealias MakeScanner = () -> (scanner: any TidyCore.Scanner, safePaths: SafePaths)
 
     enum Phase {
         case idle
@@ -17,7 +17,6 @@ final class ScanCleanModel: ObservableObject {
 
     @Published private(set) var phase: Phase = .idle
     @Published private(set) var items: [ScanItem] = []
-    @Published private(set) var roots: [URL]
     @Published var errorMessage: String?
     @Published private(set) var notice: String?
 
@@ -29,11 +28,9 @@ final class ScanCleanModel: ObservableObject {
     private var appChanges: AnyCancellable?
 
     /// `preflight` says why the selection can't be cleaned yet (say, an app that must be quit first).
-    init(roots: [URL] = [],
-         store: QuarantineStore = QuarantineStore(root: QuarantineStore.defaultRoot),
+    init(store: QuarantineStore = QuarantineStore(root: QuarantineStore.defaultRoot),
          preflight: (([ScanItem]) -> String?)? = nil,
          makeScanner: @escaping MakeScanner) {
-        self.roots = roots
         self.store = store
         self.preflight = preflight
         self.makeScanner = makeScanner
@@ -52,29 +49,12 @@ final class ScanCleanModel: ObservableObject {
     var selectedSize: Int64 { items.selectedSize }
     var blocker: String? { preflight?(selectedItems) }
 
-    var rootsDescription: String {
-        roots.map { $0.path.replacingOccurrences(of: NSHomeDirectory(), with: "~") }.joined(separator: ", ")
-    }
-
-    func chooseFolders() {
-        let panel = NSOpenPanel()
-        panel.canChooseDirectories = true
-        panel.canChooseFiles = false
-        panel.allowsMultipleSelection = true
-        panel.directoryURL = roots.first
-        panel.prompt = "Choose"
-        if panel.runModal() == .OK, !panel.urls.isEmpty {
-            roots = panel.urls
-            reset()
-        }
-    }
-
     func scan() {
         task?.cancel()
         items = []
         notice = nil
         phase = .scanning(path: nil)
-        let made = makeScanner(roots)
+        let made = makeScanner()
         safePaths = made.safePaths
         let scanner = made.scanner
         task = Task {

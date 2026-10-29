@@ -7,7 +7,6 @@ struct ScanCleanView: View {
         let title: String
         let symbol: String
         let blurb: String
-        var choosesFolders = false
         /// Shown under the blurb before scanning.
         var note: String?
         var emptyMessage = "No junk found."
@@ -72,15 +71,6 @@ struct ScanCleanView: View {
                 Text(note)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
-            }
-            if copy.choosesFolders {
-                HStack {
-                    Text("Projects in \(model.rootsDescription)")
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                    Button("Choose Folders…") { model.chooseFolders() }
-                }
             }
             Text("Nothing is removed until you review it. Removed items stay in quarantine for \(model.store.retentionDays) days, so you can undo.")
                 .foregroundStyle(.secondary)

@@ -5,7 +5,6 @@ enum Module: String, CaseIterable, Identifiable {
     case smartCare = "Smart Care"
     case systemJunk = "System Junk"
     case clutter = "Clutter"
-    case developer = "Developer"
     case cloud = "Cloud"
     case uninstaller = "Uninstaller"
     case updater = "Updater"
@@ -25,7 +24,6 @@ enum Module: String, CaseIterable, Identifiable {
         case .smartCare: return "sparkles"
         case .systemJunk: return "trash"
         case .clutter: return "doc.on.doc"
-        case .developer: return "hammer"
         case .cloud: return "icloud"
         case .uninstaller: return "xmark.app"
         case .updater: return "arrow.down.app"
@@ -53,15 +51,11 @@ struct ContentView: View {
     let reminders: ReminderModel
     @ObservedObject var navigation: AppNavigation
     @StateObject private var smartCare = SmartCareModel()
-    @StateObject private var systemJunk = ScanCleanModel { _ in
-        let scanner = SystemJunkScanner(locations: SystemJunkScanner.defaultLocations() + SystemJunkScanner.systemLocations)
+    @StateObject private var systemJunk = ScanCleanModel {
+        let scanner = CombinedScanner.systemJunk()
         return (scanner, scanner.safePaths)
     }
-    @StateObject private var developer = ScanCleanModel(roots: [ContentView.defaultProjectsFolder]) { roots in
-        let scanner = DeveloperJunkScanner(projectRoots: roots)
-        return (scanner, scanner.safePaths)
-    }
-    @StateObject private var privacy = ScanCleanModel(preflight: BrowserCheck.browsersToQuit) { _ in
+    @StateObject private var privacy = ScanCleanModel(preflight: BrowserCheck.browsersToQuit) {
         let scanner = PrivacyScanner()
         return (scanner, scanner.safePaths)
     }
@@ -91,15 +85,9 @@ struct ContentView: View {
                 ScanCleanView(model: systemJunk,
                               copy: .init(title: "System Junk",
                                           symbol: "trash.circle",
-                                          blurb: "Find caches, logs, Xcode build files and other junk.",
-                                          note: "Caches an app wrote to in the last 30 days aren't selected: they keep it fast, and removing them only means the app rebuilds them."))
-            case .some(.developer):
-                ScanCleanView(model: developer,
-                              copy: .init(title: "Developer",
-                                          symbol: "hammer.circle",
-                                          blurb: "Find package caches (Homebrew, npm, pip, Gradle…) and build output in your projects (node_modules, target, .build).",
-                                          choosesFolders: true,
-                                          note: "Caches a tool used in the last 30 days aren't selected, so its next install doesn't download everything again."))
+                                          blurb: "Find app and package caches (Homebrew, npm, pip…), logs, Xcode build files and simulators, old macOS installers and other junk.",
+                                          note: "Caches used in the last 30 days aren't selected: they keep apps and installs fast, and removing them only means they're rebuilt. "
+                                              + "Installers for the macOS you run or an older one are selected, since Apple lets you download them again, and so are simulators Xcode can no longer run."))
             case .some(.clutter):
                 ClutterView(model: clutter)
             case .some(.cloud):
@@ -135,12 +123,5 @@ struct ContentView: View {
             }
         }
         .frame(minWidth: 900, minHeight: 560)
-    }
-
-    /// ~/Projects when it exists, otherwise the home folder.
-    static var defaultProjectsFolder: URL {
-        let home = FileManager.default.homeDirectoryForCurrentUser
-        let projects = home.appendingPathComponent("Projects")
-        return FileManager.default.fileExists(atPath: projects.path) ? projects : home
     }
 }

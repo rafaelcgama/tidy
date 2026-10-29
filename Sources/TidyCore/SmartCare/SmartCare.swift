@@ -21,12 +21,12 @@ public struct SmartCare: Sendable {
         self.audit = audit
     }
 
-    /// System junk, package caches, and the launch-job and browser-policy checks.
+    /// System Junk (package caches included), and the launch-job and browser-policy checks.
     public static func standard(home: URL = FileManager.default.homeDirectoryForCurrentUser,
-                                systemLocations: [SystemJunkScanner.Location] = SystemJunkScanner.systemLocations) -> SmartCare {
+                                systemLocations: [SystemJunkScanner.Location] = SystemJunkScanner.systemLocations,
+                                applicationFolders: [URL] = MacInstallerScanner.defaultFolders) -> SmartCare {
         SmartCare(cleanupScanners: [
-            SystemJunkScanner(locations: SystemJunkScanner.defaultLocations(home: home) + systemLocations),
-            DeveloperJunkScanner(home: home, projectRoots: []),
+            CombinedScanner.systemJunk(home: home, systemLocations: systemLocations, applicationFolders: applicationFolders),
         ], audit: {
             let items = LaunchItemReader.items(in: LaunchItemReader.defaultFolders(home: home))
             return PersistenceAuditor().audit(items) + BrowserPolicyAuditor().audit()
