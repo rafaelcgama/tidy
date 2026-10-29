@@ -5,15 +5,11 @@ let usage = """
 usage: tidy scan                 list system junk and its size
        tidy clean --dry-run      show what clean would move to quarantine
        tidy clean                move the preselected junk to quarantine (asks first)
-       tidy duplicates [folder]  list files with identical contents (default: home)
-       tidy similar [folder]     list photos that look alike (default: ~/Pictures)
-       tidy large [folder]       list files of 100 MB and up (default: home)
        tidy updates              list apps and Homebrew casks with newer versions
        tidy stats                CPU, memory, disk, network and the busiest processes
        tidy malware [path…]      check for malware (default: Downloads, apps, login items, shared and temporary folders)
        tidy malware --quarantine [path…]
                                  the same, then move what it finds to quarantine (asks first)
-       tidy shred <path…>        overwrite files with random data and delete them (asks first; can't be undone)
        tidy quarantine           list what is in quarantine
        tidy restore <batch-id>   put a quarantined batch back where it came from
 """
@@ -75,47 +71,6 @@ func run(_ args: [String]) async throws -> Int32 {
         for skipped in result.skipped {
             print("  skipped \(skipped.item.url.path): \(skipped.reason)")
         }
-        return 0
-
-    case "duplicates":
-        let folder = args.count > 1 ? URL(fileURLWithPath: args[1]) : FileManager.default.homeDirectoryForCurrentUser
-        let groups = try await DuplicateFinder(roots: [folder]).find()
-        for group in groups {
-            print("\(group.files.count) copies of \(ByteFormat.string(group.size)):")
-            for file in group.files {
-                print("    \(file.url.path)")
-            }
-        }
-        let wasted = groups.reduce(0) { $0 + $1.wastedBytes }
-        print("\n\(groups.count) groups, \(ByteFormat.string(wasted)) in extra copies. Nothing was changed.")
-        return 0
-
-    case "similar":
-        #if canImport(ImageIO)
-        let folder = args.count > 1
-            ? URL(fileURLWithPath: args[1])
-            : FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Pictures")
-        let groups = try await SimilarPhotoFinder(roots: [folder]).find()
-        for group in groups {
-            print("\(group.photos.count) similar photos, \(ByteFormat.string(group.reclaimableBytes)) if you keep the best:")
-            for photo in group.photos {
-                let mark = photo.id == group.best.id ? "best" : "    "
-                print("  \(mark)  \(photo.pixelWidth) × \(photo.pixelHeight)  \(photo.item.url.path)")
-            }
-        }
-        let reclaimable = groups.reduce(0) { $0 + $1.reclaimableBytes }
-        print("\n\(groups.count) groups, \(ByteFormat.string(reclaimable)) if you keep the best of each. Nothing was changed.")
-        return 0
-        #else
-        print("tidy similar needs macOS.")
-        return 1
-        #endif
-
-    case "large":
-        let folder = args.count > 1 ? URL(fileURLWithPath: args[1]) : FileManager.default.homeDirectoryForCurrentUser
-        let items = try await LargeFileFinder(roots: [folder]).scan { _ in }
-        printGroups(items)
-        print("\n\(items.count) files, \(ByteFormat.string(items.totalSize)). Nothing was changed.")
         return 0
 
     case "updates":
@@ -212,32 +167,6 @@ func run(_ args: [String]) async throws -> Int32 {
             print("  not moved \(skipped.item.url.path): \(skipped.reason). Items that belong to root need Tidy's admin helper: use the Malware Scan screen.")
         }
         return 0
-
-    case "shred" where args.count > 1:
-        let shredder = Shredder()
-        let plan = shredder.plan(args.dropFirst().map { URL(fileURLWithPath: $0) })
-        for refusal in plan.refused {
-            print("  not shredding \(refusal.url.path): \(refusal.reason)")
-        }
-        guard !plan.accepted.isEmpty else {
-            print("Nothing to shred.")
-            return 1
-        }
-        for url in plan.accepted {
-            print("  \(url.path)")
-        }
-        print("\n\(plan.fileCount) files and \(plan.folderCount) folders, \(ByteFormat.string(plan.totalBytes)), will be overwritten with random data and deleted.")
-        print("This can't be undone, and nothing goes to quarantine. Type shred to continue: ", terminator: "")
-        guard readLine()?.trimmingCharacters(in: .whitespaces).lowercased() == "shred" else {
-            print("Cancelled. Nothing was changed.")
-            return 1
-        }
-        let result = try shredder.shred(plan.accepted)
-        print("Shredded \(result.shredded.count) items (\(ByteFormat.string(result.bytesOverwritten)) overwritten).")
-        for failure in result.failed {
-            print("  not shredded \(failure.url.path): \(failure.reason)")
-        }
-        return result.failed.isEmpty ? 0 : 1
 
     case "quarantine":
         let batches = store.batches()

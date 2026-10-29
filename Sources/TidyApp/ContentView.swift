@@ -4,16 +4,13 @@ import TidyCore
 enum Module: String, CaseIterable, Identifiable {
     case smartCare = "Smart Care"
     case systemJunk = "System Junk"
-    case clutter = "Clutter"
     case developer = "Developer"
     case uninstaller = "Uninstaller"
     case updater = "Updater"
     case protection = "Protection"
     case malware = "Malware Scan"
-    case shredder = "Shredder"
     case optimization = "Optimization"
     case performance = "Performance"
-    case spaceMap = "Space Map"
     case quarantine = "Quarantine"
 
     var id: Self { self }
@@ -22,16 +19,13 @@ enum Module: String, CaseIterable, Identifiable {
         switch self {
         case .smartCare: return "sparkles"
         case .systemJunk: return "trash"
-        case .clutter: return "doc.on.doc"
         case .developer: return "hammer"
         case .uninstaller: return "xmark.app"
         case .updater: return "arrow.down.app"
         case .protection: return "checkmark.shield"
         case .malware: return "ladybug"
-        case .shredder: return "scissors"
         case .optimization: return "bolt"
         case .performance: return "speedometer"
-        case .spaceMap: return "chart.pie"
         case .quarantine: return "arrow.uturn.backward.circle"
         }
     }
@@ -58,12 +52,9 @@ struct ContentView: View {
         return (scanner, scanner.safePaths)
     }
     @StateObject private var uninstaller = UninstallerModel()
-    @StateObject private var spaceMap = SpaceMapModel()
-    @StateObject private var clutter = ClutterModel()
     @StateObject private var protection = ProtectionModel()
     @StateObject private var optimization = OptimizationModel()
     @StateObject private var malware = MalwareModel()
-    @StateObject private var shredder = ShredderModel()
     @StateObject private var updater = UpdaterModel()
     @StateObject private var quarantine = QuarantineModel()
 
@@ -91,8 +82,6 @@ struct ContentView: View {
                                           blurb: "Find package caches (Homebrew, npm, pip, Gradle…) and build output in your projects (node_modules, target, .build).",
                                           choosesFolders: true,
                                           note: "Caches a tool used in the last 30 days aren't selected, so its next install doesn't download everything again."))
-            case .some(.clutter):
-                ClutterView(model: clutter)
             case .some(.uninstaller):
                 UninstallerView(model: uninstaller)
             case .some(.updater):
@@ -101,14 +90,10 @@ struct ContentView: View {
                 ProtectionView(model: protection)
             case .some(.malware):
                 MalwareView(model: malware, reminders: reminders)
-            case .some(.shredder):
-                ShredderView(model: shredder)
             case .some(.optimization):
                 OptimizationView(model: optimization, monitor: monitor)
             case .some(.performance):
                 PerformanceView(monitor: monitor, selection: $navigation.module)
-            case .some(.spaceMap):
-                SpaceMapView(model: spaceMap)
             case .some(.quarantine):
                 QuarantineView(model: quarantine)
             case .none:
