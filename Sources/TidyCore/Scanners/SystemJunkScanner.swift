@@ -1,8 +1,8 @@
 import Foundation
 
 /// Finds user-level junk: caches, logs, Xcode build products and old device support files. System Junk
-/// also looks for package caches, simulators, macOS installers and device backups (see
-/// `CombinedScanner.systemJunk`); the Trash is emptied on its own (see `Trash`).
+/// also looks for package caches, simulators and macOS installers (see `CombinedScanner.systemJunk`).
+/// The Trash is left to Finder: macOS keeps it from apps without Full Disk Access.
 /// Each direct child of a junk location becomes one ScanItem, so the user can pick what to remove.
 public struct SystemJunkScanner: CleaningScanner {
     public struct Location: Sendable, Hashable {

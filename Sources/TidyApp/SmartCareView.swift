@@ -1,10 +1,10 @@
+import AppKit
 import SwiftUI
 import TidyCore
 
 /// One scan across cleanup and protection, with a single report before anything changes.
 struct SmartCareView: View {
     @ObservedObject var model: SmartCareModel
-    let trash: TrashModel
     @ObservedObject var reminders: ReminderModel
     @Binding var selection: Module?
     @State private var reviewing: SmartCareReport?
@@ -49,7 +49,7 @@ struct SmartCareView: View {
                 Image(systemName: "sparkles")
                     .font(.system(size: 64))
                     .foregroundColor(.accentColor)
-                Text("One scan for junk, the Trash, login items and browser settings.")
+                Text("One scan for junk, login items and browser settings.")
                     .font(.title3)
                 Text("You'll see everything it finds before anything changes.")
                     .foregroundStyle(.secondary)
@@ -132,8 +132,13 @@ struct SmartCareView: View {
                     }
                 }
 
+                // macOS keeps what's in the Trash from apps without Full Disk Access, so Finder shows and empties it.
                 Card(title: "Trash", symbol: "trash.fill", tint: .orange) {
-                    TrashSummary(model: trash)
+                    Text("Finder shows what's in the Trash and empties it.")
+                        .foregroundStyle(.secondary)
+                    Button("Open Trash") {
+                        NSWorkspace.shared.open(FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".Trash"))
+                    }
                 }
 
                 Card(title: "Protection", symbol: "checkmark.shield.fill",

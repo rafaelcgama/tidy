@@ -34,7 +34,7 @@ struct ReviewSheet: View {
                                 .foregroundStyle(.secondary)
                                 .help("Needs administrator rights")
                         }
-                        // The label says which device a backup or simulator is; the path is what moves.
+                        // The label says which device a simulator is; the path is what moves.
                         Text(item.label.map { "\($0): \(item.url.path)" } ?? item.url.path)
                             .lineLimit(1)
                             .truncationMode(.middle)

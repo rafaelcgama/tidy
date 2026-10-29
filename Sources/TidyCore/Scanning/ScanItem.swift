@@ -10,7 +10,7 @@ public struct ScanItem: Identifiable, Hashable, Sendable {
     public var isSelected: Bool
     /// When the file was last changed, for scanners where age matters.
     public let lastModified: Date?
-    /// What to call it where its file name means nothing to people, such as a backup named by a device ID.
+    /// What to call it where its file name means nothing to people, such as a simulator named by a device ID.
     public let label: String?
 
     public init(id: UUID = UUID(), url: URL, size: Int64, category: String, isSelected: Bool = false, lastModified: Date? = nil,

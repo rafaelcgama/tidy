@@ -55,7 +55,6 @@ struct ContentView: View {
         let scanner = CombinedScanner.systemJunk()
         return (scanner, scanner.safePaths)
     }
-    @StateObject private var trash = TrashModel()
     @StateObject private var privacy = ScanCleanModel(preflight: BrowserCheck.browsersToQuit) {
         let scanner = PrivacyScanner()
         return (scanner, scanner.safePaths)
@@ -81,19 +80,14 @@ struct ContentView: View {
         } detail: {
             switch navigation.module {
             case .some(.smartCare):
-                SmartCareView(model: smartCare, trash: trash, reminders: reminders, selection: $navigation.module)
+                SmartCareView(model: smartCare, reminders: reminders, selection: $navigation.module)
             case .some(.systemJunk):
-                VStack(spacing: 0) {
-                    TrashBar(model: trash)
-                    Divider()
-                    ScanCleanView(model: systemJunk,
-                                  copy: .init(title: "System Junk",
-                                              symbol: "trash.circle",
-                                              blurb: "Find app and package caches (Homebrew, npm, pip…), logs, Xcode build files and simulators, old macOS installers, iPhone and iPad backups and other junk.",
-                                              note: "Caches used in the last 30 days aren't selected: they keep apps and installs fast, and removing them only means they're rebuilt. "
-                                                  + "Installers for the macOS you run or an older one are selected, since Apple lets you download them again, and so are simulators Xcode can no longer run. "
-                                                  + "Backups are never selected, and Tidy needs Full Disk Access to see them."))
-                }
+                ScanCleanView(model: systemJunk,
+                              copy: .init(title: "System Junk",
+                                          symbol: "trash.circle",
+                                          blurb: "Find app and package caches (Homebrew, npm, pip…), logs, Xcode build files and simulators, old macOS installers and other junk.",
+                                          note: "Caches used in the last 30 days aren't selected: they keep apps and installs fast, and removing them only means they're rebuilt. "
+                                              + "Installers for the macOS you run or an older one are selected, since Apple lets you download them again, and so are simulators Xcode can no longer run."))
             case .some(.clutter):
                 ClutterView(model: clutter)
             case .some(.cloud):

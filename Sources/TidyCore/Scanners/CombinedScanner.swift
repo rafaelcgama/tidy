@@ -10,8 +10,8 @@ public struct CombinedScanner: CleaningScanner {
         self.scanners = scanners
     }
 
-    /// What System Junk looks for: package caches, the junk folders, Xcode simulators, macOS installers, and iPhone
-    /// and iPad backups. Package caches come first, so a cache in ~/Library/Caches shows under its tool's name.
+    /// What System Junk looks for: package caches, the junk folders, Xcode simulators and macOS installers.
+    /// Package caches come first, so a cache in ~/Library/Caches shows under its tool's name.
     public static func systemJunk(home: URL = FileManager.default.homeDirectoryForCurrentUser,
                                   systemLocations: [SystemJunkScanner.Location] = SystemJunkScanner.systemLocations,
                                   applicationFolders: [URL] = MacInstallerScanner.defaultFolders) -> CombinedScanner {
@@ -20,7 +20,6 @@ public struct CombinedScanner: CleaningScanner {
             SystemJunkScanner(locations: SystemJunkScanner.defaultLocations(home: home) + systemLocations),
             SimulatorScanner(home: home),
             MacInstallerScanner(folders: applicationFolders),
-            DeviceBackupScanner(home: home),
         ])
     }
 
