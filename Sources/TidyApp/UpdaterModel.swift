@@ -6,7 +6,6 @@ import TidyCore
 final class UpdaterModel: ObservableObject {
     @Published private(set) var updates: [AvailableUpdate] = []
     @Published private(set) var casks: [OutdatedCask] = []
-    @Published private(set) var appStoreApps: [InstalledApp] = []
     @Published private(set) var isChecking = false
     @Published private(set) var hasChecked = false
     @Published private(set) var upgrading: Set<String> = []
@@ -14,8 +13,11 @@ final class UpdaterModel: ObservableObject {
 
     let hasHomebrew = Homebrew.executable != nil
 
+    /// Checks Tidy itself too.
     func check() {
+        guard !isChecking else { return }
         isChecking = true
+        TidyUpdateModel.shared.check()
         Task {
             let apps = await Task.detached { () -> [InstalledApp] in
                 AppInventory.apps(in: AppInventory.defaultFolders())
@@ -24,7 +26,6 @@ final class UpdaterModel: ObservableObject {
             if hasHomebrew {
                 casks = (try? await Homebrew.outdatedCasks()) ?? []
             }
-            appStoreApps = apps.filter(\.isFromAppStore)
             isChecking = false
             hasChecked = true
         }
@@ -34,10 +35,14 @@ final class UpdaterModel: ObservableObject {
         upgrading.insert(cask.token)
         Task {
             do {
-                _ = try await Homebrew.run(["upgrade", "--cask", cask.token])
-                casks.removeAll { $0 == cask }
+                try await Homebrew.upgrade(cask.token)
             } catch {
                 errorMessage = "Couldn't update \(cask.token): \(error.localizedDescription)"
+            }
+            // Ask Homebrew again rather than assume, so the list shows what really happened.
+            casks = (try? await Homebrew.outdatedCasks()) ?? casks
+            if errorMessage == nil, casks.contains(where: { $0.token == cask.token }) {
+                errorMessage = "Homebrew didn't update \(cask.token). Run `brew upgrade --cask --greedy \(cask.token)` in Terminal to see why."
             }
             upgrading.remove(cask.token)
         }
@@ -47,9 +52,4 @@ final class UpdaterModel: ObservableObject {
         NSWorkspace.shared.open(url)
     }
 
-    func openAppStoreUpdates() {
-        if let url = URL(string: "macappstore://showUpdatesPage") {
-            NSWorkspace.shared.open(url)
-        }
-    }
 }

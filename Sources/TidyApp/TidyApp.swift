@@ -30,6 +30,14 @@ struct TidyApp: App {
         WindowGroup("Tidy", id: "main") {
             ContentView(monitor: monitor, reminders: reminders, navigation: navigation)
         }
+        .commands {
+            CommandGroup(after: .appInfo) {
+                Button("Check for Updates…") {
+                    navigation.module = .updater
+                    TidyUpdateModel.shared.check()
+                }
+            }
+        }
         Settings {
             SettingsView(reminders: reminders)
         }
@@ -50,7 +58,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Batches past their retention period are deleted for good: the app's own here, the
         // admin helper's when it's contacted.
         _ = try? QuarantineStore(root: QuarantineStore.defaultRoot).purgeExpired()
-        Task { @MainActor in AdminHelper.shared.checkIn() }
+        Task { @MainActor in
+            AdminHelper.shared.checkIn()
+            // Only finds out whether a newer Tidy exists; installing waits for your click.
+            TidyUpdateModel.shared.check(quietly: true)
+        }
     }
 
     /// With the menu bar monitor on, closing the window keeps Tidy running in the menu bar.

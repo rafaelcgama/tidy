@@ -16,6 +16,7 @@ struct MenuBarLabel: View {
 struct MenuBarMonitorView: View {
     @ObservedObject var monitor: SystemMonitor
     @ObservedObject var reminders: ReminderModel
+    @ObservedObject var tidy = TidyUpdateModel.shared
     let navigation: AppNavigation
     @Environment(\.openWindow) private var openWindow
 
@@ -26,6 +27,18 @@ struct MenuBarMonitorView: View {
                     Text(due.text)
                     Button(due.scan == .malware ? "Open Malware Scan" : "Open Smart Care") {
                         navigation.module = due.scan == .malware ? .malware : .smartCare
+                        showMainWindow()
+                    }
+                }
+                .padding(8)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(RoundedRectangle(cornerRadius: 6).fill(Color.accentColor.opacity(0.12)))
+            }
+            if let release = tidy.available {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Tidy \(release.version) is available.")
+                    Button("Open Updater") {
+                        navigation.module = .updater
                         showMainWindow()
                     }
                 }

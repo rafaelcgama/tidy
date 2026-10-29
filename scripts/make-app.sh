@@ -11,7 +11,7 @@
 #       `xcrun notarytool store-credentials`).
 #
 # The disk image opens by itself when the build is done; set NO_OPEN=1 to skip that.
-# BUNDLE_ID (default com.example.tidy) and VERSION (default 0.1.0) can be set as well. Choose your
+# BUNDLE_ID (default com.example.tidy) and VERSION (default: the VERSION file) can be set as well. Choose your
 # own reverse-DNS bundle id before sharing builds: settings and macOS permissions are tied to it.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -20,7 +20,7 @@ mkdir -p build
 exec > >(tee build/make-app-log.txt) 2>&1
 
 BUNDLE_ID="${BUNDLE_ID:-com.example.tidy}"
-VERSION="${VERSION:-0.1.0}"
+VERSION="${VERSION:-$(cat VERSION)}"
 BUILD="${BUILD:-$(date +%Y%m%d%H%M)}"
 APP="build/Tidy.app"
 

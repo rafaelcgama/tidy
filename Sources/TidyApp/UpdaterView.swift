@@ -4,6 +4,7 @@ import TidyCore
 
 struct UpdaterView: View {
     @ObservedObject var model: UpdaterModel
+    @ObservedObject var tidy = TidyUpdateModel.shared
 
     var body: some View {
         VStack(spacing: 0) {
@@ -20,12 +21,15 @@ struct UpdaterView: View {
             }
             .padding(12)
             Divider()
+            TidyUpdateRow(model: tidy)
+                .padding(12)
+            Divider()
             if !model.hasChecked {
                 VStack(spacing: 14) {
                     Image(systemName: "arrow.down.app")
                         .font(.system(size: 56))
                         .foregroundColor(.accentColor)
-                    Text("Check apps that update themselves (Sparkle) and Homebrew casks for newer versions.")
+                    Text("Check apps that update themselves (Sparkle) and Homebrew apps for newer versions.")
                         .font(.title3)
                         .multilineTextAlignment(.center)
                     Text("Checking contacts each app's update server. Nothing is installed without you.")
@@ -85,19 +89,14 @@ struct UpdaterView: View {
                             }
                         }
                     }
-                    if !model.appStoreApps.isEmpty {
-                        Section("App Store") {
-                            HStack {
-                                Text("\(model.appStoreApps.count) apps came from the App Store and update there.")
-                                Spacer()
-                                Button("Open App Store Updates") { model.openAppStoreUpdates() }
-                            }
-                        }
-                    }
                 }
             }
         }
         .navigationTitle("Updater")
+        // Back from updating an app in its own window, the list checks again by itself.
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            if model.hasChecked { model.check() }
+        }
         .alert("Something went wrong", isPresented: errorShown) {
             Button("OK", role: .cancel) {}
         } message: {
@@ -107,8 +106,67 @@ struct UpdaterView: View {
 
     private var summary: String {
         guard model.hasChecked else { return "Updates" }
-        let count = model.updates.count + model.casks.count
+        let count = model.updates.count + model.casks.count + (tidy.available == nil ? 0 : 1)
         return count == 0 ? "Everything is up to date" : "\(count) updates available"
+    }
+
+    private var errorShown: Binding<Bool> {
+        Binding(get: { model.errorMessage != nil },
+                set: { if !$0 { model.errorMessage = nil } })
+    }
+}
+
+/// Tidy's own version, and the button that updates it.
+private struct TidyUpdateRow: View {
+    @ObservedObject var model: TidyUpdateModel
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(nsImage: NSApp.applicationIconImage)
+                .resizable()
+                .frame(width: 28, height: 28)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                Text(detail)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            switch model.phase {
+            case .checking:
+                ProgressView()
+                    .controlSize(.small)
+            case .downloading, .installing:
+                ProgressView()
+                    .controlSize(.small)
+                Text(model.phase == .downloading ? "Downloading…" : "Installing…")
+                    .foregroundStyle(.secondary)
+            case .idle:
+                if model.available != nil {
+                    Button("What's New") { model.openReleasePage() }
+                    Button("Update Tidy") { model.install() }
+                        .disabled(!model.canInstall)
+                        .help(model.canInstall ? "Downloads the new Tidy, replaces this one and opens it again." : "Open the Tidy in Applications to update it.")
+                }
+            }
+        }
+        .alert("Something went wrong", isPresented: errorShown) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(model.errorMessage ?? "")
+        }
+    }
+
+    private var title: String {
+        if let release = model.available { return "Tidy \(release.version) is available" }
+        if model.hasChecked { return model.latest == nil ? "No Tidy release on GitHub yet" : "Tidy is up to date" }
+        return "Tidy"
+    }
+
+    private var detail: String {
+        if model.phase == .installing { return "Tidy will quit and open again with the new version." }
+        if model.available != nil, !model.canInstall { return "This copy runs from Xcode. Open the Tidy in Applications to update it." }
+        return model.available == nil ? model.installedText : "You have \(model.installedText)."
     }
 
     private var errorShown: Binding<Bool> {
