@@ -28,23 +28,35 @@ final class QuarantineModel: ObservableObject {
         batches = cleaner.batches()
     }
 
-    func restore(_ batch: QuarantineBatch) {
+    /// Puts back the cleans one after another; `restoring` names the one in progress.
+    func restore(_ chosen: [QuarantineBatch]) {
+        guard let first = chosen.first else { return }
         let cleaner = self.cleaner
-        restoring = batch.id
+        restoring = first.id
         notice = nil
         Task {
-            do {
-                let result = try await cleaner.undo(batchID: batch.id)
-                var text = "Put back \(result.restored.count) of \(batch.entries.count) items."
-                if !result.skipped.isEmpty {
-                    let reasons = result.skipped.prefix(3).map {
+            var restored = 0, total = 0
+            var skipped: [String] = []
+            for batch in chosen {
+                restoring = batch.id
+                do {
+                    let result = try await cleaner.undo(batchID: batch.id)
+                    restored += result.restored.count
+                    total += batch.entries.count
+                    skipped += result.skipped.map {
                         "\(URL(fileURLWithPath: $0.entry.originalPath).lastPathComponent) (\($0.reason))"
                     }
-                    text += " Not put back: " + reasons.joined(separator: ", ") + (result.skipped.count > 3 ? "…" : ".")
+                } catch {
+                    errorMessage = error.localizedDescription
+                    break
+                }
+            }
+            if total > 0 {
+                var text = "Put back \(restored) of \(total) items."
+                if !skipped.isEmpty {
+                    text += " Not put back: " + skipped.prefix(3).joined(separator: ", ") + (skipped.count > 3 ? "…" : ".")
                 }
                 notice = text
-            } catch {
-                errorMessage = error.localizedDescription
             }
             restoring = nil
             refresh()

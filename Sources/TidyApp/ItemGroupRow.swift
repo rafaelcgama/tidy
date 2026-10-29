@@ -16,7 +16,7 @@ struct ItemGroupRow: View {
                     Toggle("", isOn: Binding(get: { item.isSelected }, set: { _ in toggleItem(item) }))
                         .labelsHidden()
                     VStack(alignment: .leading, spacing: 1) {
-                        Text(item.url.lastPathComponent)
+                        Text(item.label ?? item.url.lastPathComponent)
                             .lineLimit(1)
                             .truncationMode(.middle)
                         // Where it is, so items with the same name (every project's node_modules) can be told apart.

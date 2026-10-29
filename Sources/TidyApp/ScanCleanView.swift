@@ -7,7 +7,6 @@ struct ScanCleanView: View {
         let title: String
         let symbol: String
         let blurb: String
-        var choosesFolders = false
         /// Shown under the blurb before scanning.
         var note: String?
         var emptyMessage = "No junk found."
@@ -73,15 +72,6 @@ struct ScanCleanView: View {
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
             }
-            if copy.choosesFolders {
-                HStack {
-                    Text("Projects in \(model.rootsDescription)")
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                    Button("Choose Folders…") { model.chooseFolders() }
-                }
-            }
             Text("Nothing is removed until you review it. Removed items stay in quarantine for \(model.store.retentionDays) days, so you can undo.")
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -116,9 +106,6 @@ struct ScanCleanView: View {
             VStack(spacing: 12) {
                 Text(copy.emptyMessage)
                     .font(.title3)
-                Text("If you expected results, give Tidy Full Disk Access in System Settings › Privacy & Security.")
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
                 Button("Scan Again") { model.scan() }
             }
             .padding(40)
@@ -135,15 +122,11 @@ struct ScanCleanView: View {
                 Divider()
                 HStack {
                     Text("\(model.selectedItems.count) items selected · \(ByteFormat.string(model.selectedSize))")
-                    if let blocker = model.blocker {
-                        Label(blocker, systemImage: "exclamationmark.triangle.fill")
-                            .foregroundColor(.orange)
-                    }
                     Spacer()
                     Button("Scan Again") { model.scan() }
                     Button("Review & Clean…") { showingReview = true }
                         .keyboardShortcut(.defaultAction)
-                        .disabled(model.selectedItems.isEmpty || model.blocker != nil)
+                        .disabled(model.selectedItems.isEmpty)
                 }
                 .padding(12)
             }

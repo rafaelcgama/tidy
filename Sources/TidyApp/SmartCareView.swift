@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 import TidyCore
 
@@ -48,7 +49,7 @@ struct SmartCareView: View {
                 Image(systemName: "sparkles")
                     .font(.system(size: 64))
                     .foregroundColor(.accentColor)
-                Text("One scan for junk, package caches, login items and browser settings.")
+                Text("One scan for junk, login items and browser settings.")
                     .font(.title3)
                 Text("You'll see everything it finds before anything changes.")
                     .foregroundStyle(.secondary)
@@ -122,12 +123,21 @@ struct SmartCareView: View {
                         Text("No junk to clean.")
                             .foregroundStyle(.secondary)
                     } else {
-                        Text("\(ByteFormat.string(report.selectedCleanup.totalSize)) of caches, logs and build files in \(report.selectedCleanup.count) items.")
+                        Text("\(ByteFormat.string(report.selectedCleanup.totalSize)) of caches, logs, build files and other junk in \(report.selectedCleanup.count) items.")
                         HStack {
                             Button("Review & Clean…") { reviewing = report }
                                 .keyboardShortcut(.defaultAction)
                             Button("Choose Items in System Junk") { selection = .systemJunk }
                         }
+                    }
+                }
+
+                // macOS keeps what's in the Trash from apps without Full Disk Access, so Finder shows and empties it.
+                Card(title: "Trash", symbol: "trash.fill", tint: .orange) {
+                    Text("Finder shows what's in the Trash and empties it.")
+                        .foregroundStyle(.secondary)
+                    Button("Open Trash") {
+                        NSWorkspace.shared.open(FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".Trash"))
                     }
                 }
 
@@ -143,14 +153,10 @@ struct SmartCareView: View {
                     }
                 }
 
-                Card(title: "Go further", symbol: "arrow.right.circle.fill", tint: .purple) {
-                    Text("These need your judgment, so Smart Care doesn't touch them.")
+                Card(title: "Apps", symbol: "xmark.app.fill", tint: .purple) {
+                    Text("Which apps to remove needs your judgment, so Smart Care leaves that to the Uninstaller, along with what removed apps left behind.")
                         .foregroundStyle(.secondary)
-                    HStack {
-                        Button("Duplicates & Large Files") { selection = .clutter }
-                        Button("Uninstall Apps") { selection = .uninstaller }
-                        Button("Space Map") { selection = .spaceMap }
-                    }
+                    Button("Open Uninstaller") { selection = .uninstaller }
                 }
 
                 HStack {

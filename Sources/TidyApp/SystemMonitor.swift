@@ -11,15 +11,12 @@ final class SystemMonitor: ObservableObject {
     @Published private(set) var memory: MemoryStats?
     @Published private(set) var disk: DiskSpace?
     @Published private(set) var network = NetworkRate.zero
-    @Published private(set) var processes: [ProcessLoad] = []
 
     nonisolated static let historyLength = 60
 
     private var lastTicks: CPUTicks?
     private var lastInterfaces: [String: InterfaceCounters] = [:]
-    private var lastProcesses: [ProcessSample] = []
     private var lastSample = Date()
-    private var processWatchers = 0
     private var timer: Timer?
 
     init() {
@@ -30,25 +27,6 @@ final class SystemMonitor: ObservableObject {
         // Common modes keep it ticking while a menu is open or a list is scrolling.
         RunLoop.main.add(timer, forMode: .common)
         self.timer = timer
-    }
-
-    /// Reading every process costs more, so it only happens while a screen shows the list.
-    func watchProcesses() {
-        processWatchers += 1
-        if processWatchers == 1 { sampleProcesses(seconds: 0) }
-    }
-
-    func stopWatchingProcesses() {
-        processWatchers = max(0, processWatchers - 1)
-        if processWatchers == 0 {
-            lastProcesses = []
-            processes = []
-        }
-    }
-
-    /// The app behind a process, when it is one (daemons and command-line tools aren't).
-    func app(for pid: Int32) -> NSRunningApplication? {
-        NSRunningApplication(processIdentifier: pid)
     }
 
     private func sample() {
@@ -69,19 +47,12 @@ final class SystemMonitor: ObservableObject {
             network = NetworkRate(from: lastInterfaces, to: interfaces, seconds: seconds)
         }
         lastInterfaces = interfaces
-        if processWatchers > 0 { sampleProcesses(seconds: seconds) }
-    }
-
-    private func sampleProcesses(seconds: Double) {
-        let current = ProcessSample.all()
-        processes = ProcessLoad.compare(lastProcesses, current, seconds: seconds)
-        lastProcesses = current
     }
 }
 
 enum StatFormat {
     static func percent(_ fraction: Double) -> String { "\(Int((fraction * 100).rounded()))%" }
-    static func bytes(_ value: UInt64) -> String { ByteFormat.string(Int64(clamping: value)) }
+    static func memory(_ value: UInt64) -> String { ByteFormat.memory(Int64(clamping: value)) }
     static func rate(_ bytesPerSecond: Double) -> String { ByteFormat.string(Int64(bytesPerSecond.rounded())) + "/s" }
 }
 

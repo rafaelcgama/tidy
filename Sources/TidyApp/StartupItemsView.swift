@@ -3,56 +3,25 @@ import ServiceManagement
 import SwiftUI
 import TidyCore
 
-/// What starts with your Mac and what keeps it busy, with switches, plus the maintenance tasks.
-struct OptimizationView: View {
+/// What starts with your Mac, with switches: apps that open at login and background items.
+struct StartupItems: View {
     @ObservedObject var model: OptimizationModel
-    @ObservedObject var monitor: SystemMonitor
     /// Reading the apps that open at login makes macOS ask once, so it waits for a click the first time.
     @AppStorage("readLoginApps") private var readLoginApps = false
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 22) {
-                Text("Fewer things starting with your Mac means a faster startup and more free memory all day. Switching something off doesn't delete it: switch it back on any time.")
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                loginApps
-                backgroundItems
-                busyNow
-                OptimizationSection(title: "Maintenance", symbol: "wrench.and.screwdriver") {
-                    MaintenanceTasks()
-                }
-            }
-            .padding(16)
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .navigationTitle("Optimization")
-        .toolbar {
-            Button("Refresh") {
-                model.refresh()
-                if readLoginApps { model.loadLoginApps() }
-            }
-            .disabled(model.isLoading)
+        VStack(alignment: .leading, spacing: 22) {
+            loginApps
+            backgroundItems
         }
         .onAppear {
             if !model.hasLoaded { model.refresh() }
             if readLoginApps, model.loginAppsState == .notLoaded { model.loadLoginApps() }
-            monitor.watchProcesses()
         }
-        .onDisappear { monitor.stopWatchingProcesses() }
-        .alert("Something went wrong", isPresented: errorShown) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text(model.errorMessage ?? "")
-        }
-    }
-
-    private var errorShown: Binding<Bool> {
-        Binding(get: { model.errorMessage != nil }, set: { if !$0 { model.errorMessage = nil } })
     }
 
     private var loginApps: some View {
-        OptimizationSection(title: "Apps That Open at Login", symbol: "person.crop.circle.badge.checkmark") {
+        PerformanceSection(title: "Apps That Open at Login", symbol: "person.crop.circle.badge.checkmark") {
             switch model.loginAppsState {
             case .notLoaded:
                 Text("Tidy reads this list from System Events, so macOS asks once whether Tidy may.")
@@ -100,7 +69,7 @@ struct OptimizationView: View {
     }
 
     private var backgroundItems: some View {
-        OptimizationSection(title: "Background Items", symbol: "gearshape.2") {
+        PerformanceSection(title: "Background Items", symbol: "gearshape.2") {
             if !model.hasLoaded {
                 ProgressView()
                     .frame(maxWidth: .infinity)
@@ -133,29 +102,10 @@ struct OptimizationView: View {
         if job.keepAlive { parts.append("kept running") }
         return parts.joined(separator: " · ")
     }
-
-    private var busyNow: some View {
-        OptimizationSection(title: "Using a Lot Right Now", symbol: "flame") {
-            let heavy = ProcessLoad.heavy(monitor.processes)
-            if monitor.processes.isEmpty {
-                ProgressView()
-                    .frame(maxWidth: .infinity)
-            } else if heavy.isEmpty {
-                Text("Nothing is using much CPU or memory right now.")
-                    .foregroundStyle(.secondary)
-            } else {
-                ForEach(heavy.prefix(8)) { process in
-                    ProcessRow(process: process, app: monitor.app(for: process.pid))
-                }
-            }
-            Text("Apps using more than 30% of a core or 1 GB of memory. Quitting one you aren't using frees that up.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
-    }
 }
 
-private struct OptimizationSection<Content: View>: View {
+/// A titled box, one per part of the Performance screen.
+struct PerformanceSection<Content: View>: View {
     let title: String
     let symbol: String
     @ViewBuilder let content: () -> Content

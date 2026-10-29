@@ -9,6 +9,13 @@ final class UninstallerModel: ObservableObject {
         case app(InstalledApp)
     }
 
+    enum Sort: String, CaseIterable, Identifiable {
+        case name = "Name"
+        case lastOpened = "Last Opened"
+
+        var id: Self { self }
+    }
+
     enum Phase {
         case empty
         case scanning
@@ -19,6 +26,9 @@ final class UninstallerModel: ObservableObject {
 
     @Published private(set) var apps: [InstalledApp] = []
     @Published var search = ""
+    @Published var sort: Sort = .name
+    /// When each app was last opened, by app id; missing when there's no record.
+    @Published private(set) var lastOpened: [String: Date] = [:]
     @Published var selection: Selection? {
         didSet { if selection != oldValue { scanSelection() } }
     }
@@ -39,7 +49,21 @@ final class UninstallerModel: ObservableObject {
     }
 
     var filteredApps: [InstalledApp] {
-        search.isEmpty ? apps : apps.filter { $0.name.localizedCaseInsensitiveContains(search) }
+        let shown = search.isEmpty ? apps : apps.filter { $0.name.localizedCaseInsensitiveContains(search) }
+        guard sort == .lastOpened else { return shown }
+        // Longest unused first, and apps never opened before all of them.
+        return shown.sorted { a, b in
+            let first = lastOpened[a.id] ?? .distantPast, second = lastOpened[b.id] ?? .distantPast
+            return first != second ? first < second : a.name.localizedCaseInsensitiveCompare(b.name) == .orderedAscending
+        }
+    }
+
+    func usageText(_ app: InstalledApp) -> String {
+        AppUsage.text(lastOpened: lastOpened[app.id], now: Date())
+    }
+
+    func isUnused(_ app: InstalledApp) -> Bool {
+        AppUsage.isUnused(lastOpened: lastOpened[app.id], now: Date())
     }
 
     var groups: [CategorySummary] { items.groupedByCategory() }
@@ -53,13 +77,18 @@ final class UninstallerModel: ObservableObject {
     func loadApps() {
         loadTask?.cancel()
         loadTask = Task {
-            let (apps, ids) = await Task.detached { () -> ([InstalledApp], Set<String>) in
+            let (apps, ids, usage) = await Task.detached { () -> ([InstalledApp], Set<String>, [String: Date]) in
                 let apps = AppInventory.apps(in: AppInventory.defaultFolders())
                 let system = AppInventory.apps(in: AppInventory.systemFolders)
-                return (apps, Set((apps + system).map(\.bundleID)))
+                var usage: [String: Date] = [:]
+                for app in apps {
+                    usage[app.id] = AppUsage.lastOpened(app.url)
+                }
+                return (apps, Set((apps + system).map(\.bundleID)), usage)
             }.value
             self.apps = apps
             self.installedBundleIDs = ids
+            self.lastOpened = usage
         }
     }
 
@@ -69,7 +98,8 @@ final class UninstallerModel: ObservableObject {
             let scanner = OrphanedLeftoversScanner(finder: finder, installedBundleIDs: installedBundleIDs)
             return (scanner, scanner.safePaths)
         case .app(let app):
-            let scanner = UninstallScanner(app: app, finder: finder, systemFinder: .system, installedBundleIDs: installedBundleIDs)
+            let scanner = UninstallScanner(app: app, finder: finder, systemFinder: .system, packages: .system,
+                                           installedBundleIDs: installedBundleIDs)
             return (scanner, scanner.safePaths)
         }
     }
