@@ -14,8 +14,10 @@ struct UninstallerView: View {
                 .frame(minWidth: 420, maxWidth: .infinity, maxHeight: .infinity)
         }
         .navigationTitle("Uninstaller")
-        .onAppear {
-            if model.apps.isEmpty { model.loadApps() }
+        // Read Applications again each time, so apps installed or removed while Tidy is open show up.
+        .onAppear { model.loadApps() }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            model.loadApps()
         }
         .sheet(isPresented: $showingReview) {
             ReviewSheet(title: model.selectedApp.map { "Remove \($0.name)?" } ?? "Remove these leftovers?",

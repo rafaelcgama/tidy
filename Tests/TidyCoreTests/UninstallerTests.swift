@@ -60,6 +60,21 @@ final class UninstallerTests: XCTestCase {
         XCTAssertEqual(apps.first?.name, "Bar", "falls back to the bundle's file name")
     }
 
+    func testListsIPhoneAndIPadAppsInstalledOnTheMac() throws {
+        // Their Info.plist sits in Wrapper/<name>.app, not in Contents.
+        let inner = tmp.appendingPathComponent("Applications/Liminal.app/Wrapper/Liminal.app")
+        try FileManager.default.createDirectory(at: inner, withIntermediateDirectories: true)
+        let plist: [String: Any] = ["CFBundleIdentifier": "com.example.liminal", "CFBundleDisplayName": "Liminal"]
+        try PropertyListSerialization.data(fromPropertyList: plist, format: .xml, options: 0)
+            .write(to: inner.appendingPathComponent("Info.plist"))
+        try Data().write(to: tmp.appendingPathComponent("Applications/Liminal.app/Wrapper/iTunesMetadata.plist"))
+
+        let apps = AppInventory.apps(in: [tmp.appendingPathComponent("Applications")])
+        XCTAssertEqual(apps.map(\.name), ["Liminal"])
+        XCTAssertEqual(apps.first?.bundleID, "com.example.liminal")
+        XCTAssertEqual(apps.first?.isFromAppStore, true)
+    }
+
     func testFindsLeftoversByBundleIDAndPreselectsThem() throws {
         let expected: Set<String> = [
             "Application Support/com.foo.app",
