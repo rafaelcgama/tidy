@@ -41,7 +41,7 @@ public struct HelperPolicy: Sendable {
         public var errorDescription: String? {
             switch self {
             case .notAbsolute: return "Not a full path."
-            case .notAllowedFolder: return "Tidy's helper only works in system cache, log, launch, preference and app folders."
+            case .notAllowedFolder: return "Tidy's helper only works in system cache, log, launch, preference, app and plug-in folders, and with installer receipts."
             case .nameNotAllowed: return "Tidy's helper doesn't move items with this name from this folder."
             case .folderNotInPlace: return "Its folder is missing or a symlink is in the way."
             case .missing: return "It's no longer there."
@@ -84,6 +84,17 @@ public struct HelperPolicy: Sendable {
         Folder("/Library/Preferences", suffixes: [".plist"], refusedPrefixes: ["com.apple."]),
         Folder("/Applications", suffixes: [".app"]),
         Folder("/Applications/Utilities", suffixes: [".app"]),
+        // Where installer packages put plug-ins and tools outside an app. Tidy offers what's here only
+        // when the app's own package receipt lists it (InstallerPackages).
+        Folder("/Library/Audio/Plug-Ins/HAL", suffixes: [".driver", ".plugin"]),
+        Folder("/Library/Audio/Plug-Ins/Components", suffixes: [".component"]),
+        Folder("/Library/Internet Plug-Ins", suffixes: [".plugin", ".webplugin"]),
+        Folder("/Library/PreferencePanes", suffixes: [".prefpane"]),
+        Folder("/Library/QuickLook", suffixes: [".qlgenerator"]),
+        Folder("/Library/Spotlight", suffixes: [".mdimporter"]),
+        Folder("/usr/local/bin"),
+        // The receipts themselves, so macOS stops listing a removed package as installed.
+        Folder("/private/var/db/receipts", suffixes: [".bom", ".plist"], refusedPrefixes: ["com.apple."]),
     ]
 
     /// The rule for an entry's folder, judged by path alone; nil where the helper never works.

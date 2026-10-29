@@ -44,7 +44,15 @@ struct UninstallerView: View {
         VStack(spacing: 0) {
             TextField("Search apps", text: $model.search)
                 .textFieldStyle(.roundedBorder)
-                .padding(8)
+                .padding([.horizontal, .top], 8)
+            Picker("Sort by", selection: $model.sort) {
+                ForEach(UninstallerModel.Sort.allCases) { sort in
+                    Text(sort.rawValue).tag(sort)
+                }
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .padding(8)
             List(selection: $model.selection) {
                 Section {
                     Label("Leftovers of removed apps", systemImage: "questionmark.folder")
@@ -58,11 +66,10 @@ struct UninstallerView: View {
                                 .frame(width: 20, height: 20)
                             VStack(alignment: .leading) {
                                 Text(app.name)
-                                if let version = app.version {
-                                    Text(version)
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                }
+                                // Unused apps stand out: never opened, or not in six months.
+                                Text([app.version, model.usageText(app)].compactMap { $0 }.joined(separator: " · "))
+                                    .font(.caption)
+                                    .foregroundColor(model.isUnused(app) ? .orange : .secondary)
                             }
                         }
                         .tag(UninstallerModel.Selection.app(app))
@@ -82,6 +89,7 @@ struct UninstallerView: View {
                     .foregroundColor(.accentColor)
                 Text("Pick an app to remove it and everything it left behind,")
                 Text("or look for leftovers of apps you already deleted.")
+                Text("Sort by Last Opened to find apps you no longer use.")
             }
             .foregroundStyle(.secondary)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -182,7 +190,7 @@ struct UninstallerView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(app.name)
                         .font(.title2.bold())
-                    Text([app.bundleID, app.version].compactMap { $0 }.joined(separator: " · "))
+                    Text([app.bundleID, app.version, model.usageText(app)].compactMap { $0 }.joined(separator: " · "))
                         .foregroundStyle(.secondary)
                 }
                 Spacer()
