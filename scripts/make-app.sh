@@ -74,7 +74,7 @@ fi
 # The disk image: Tidy.app next to a shortcut to /Applications, the usual drag-to-install window.
 DMG="build/Tidy.dmg"
 STAGE="build/dmg"
-echo "Making $DMG…"
+echo "Making ${DMG}…"
 rm -rf "$STAGE" "$DMG"
 mkdir -p "$STAGE"
 ditto "$APP" "$STAGE/Tidy.app"
