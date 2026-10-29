@@ -34,11 +34,6 @@ final class TidyUpdateModel: ObservableObject {
         Bundle.main.bundleURL.pathExtension == "app" && installedBuild != nil
     }
 
-    var installedText: String {
-        guard let installedVersion, let installedBuild else { return "Tidy run from Xcode" }
-        return "Tidy \(installedVersion) (build \(installedBuild))"
-    }
-
     /// The check when Tidy starts is quiet: if GitHub can't be reached then, nothing is said.
     func check(quietly: Bool = false) {
         guard phase == .idle else { return }

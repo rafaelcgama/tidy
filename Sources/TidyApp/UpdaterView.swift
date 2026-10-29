@@ -116,17 +116,15 @@ struct UpdaterView: View {
     }
 }
 
-/// Tidy's own version, and the button that updates it.
+/// Tidy's own version, and the button that updates it, laid out like the app rows below it.
 private struct TidyUpdateRow: View {
     @ObservedObject var model: TidyUpdateModel
 
     var body: some View {
         HStack(spacing: 10) {
-            Image(nsImage: NSApp.applicationIconImage)
-                .resizable()
-                .frame(width: 28, height: 28)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
+            icon
+            VStack(alignment: .leading) {
+                Text("Tidy")
                 Text(detail)
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -146,7 +144,10 @@ private struct TidyUpdateRow: View {
                     Button("What's New") { model.openReleasePage() }
                     Button("Update Tidy") { model.install() }
                         .disabled(!model.canInstall)
-                        .help(model.canInstall ? "Downloads the new Tidy, replaces this one and opens it again." : "Open the Tidy in Applications to update it.")
+                        .help(model.canInstall ? "Downloads the new Tidy, replaces this one and opens it again." : "Only the Tidy installed in Applications can update itself.")
+                } else if model.hasChecked {
+                    Text("Up to date")
+                        .foregroundStyle(.secondary)
                 }
             }
         }
@@ -157,16 +158,26 @@ private struct TidyUpdateRow: View {
         }
     }
 
-    private var title: String {
-        if let release = model.available { return "Tidy \(release.version) is available" }
-        if model.hasChecked { return model.latest == nil ? "No Tidy release on GitHub yet" : "Tidy is up to date" }
-        return "Tidy"
+    /// The installed app's icon; a copy run from Xcode has none of its own.
+    @ViewBuilder
+    private var icon: some View {
+        if model.canInstall {
+            Image(nsImage: NSApp.applicationIconImage)
+                .resizable()
+                .frame(width: 28, height: 28)
+        } else {
+            Image(systemName: "sparkles")
+                .foregroundColor(.white)
+                .frame(width: 28, height: 28)
+                .background(RoundedRectangle(cornerRadius: 7).fill(Color.accentColor))
+        }
     }
 
     private var detail: String {
-        if model.phase == .installing { return "Tidy will quit and open again with the new version." }
-        if model.available != nil, !model.canInstall { return "This copy runs from Xcode. Open the Tidy in Applications to update it." }
-        return model.available == nil ? model.installedText : "You have \(model.installedText)."
+        if model.phase == .installing { return "Tidy will reopen when it's done." }
+        let installed = model.installedVersion ?? "in development"
+        if let release = model.available { return "\(installed) → \(release.version)" }
+        return model.installedVersion.map { "Version \($0)" } ?? "Version in development"
     }
 
     private var errorShown: Binding<Bool> {
