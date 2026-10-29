@@ -103,7 +103,7 @@ struct UpdaterView: View {
     private var summary: String {
         guard model.hasChecked else { return "Updates" }
         let count = model.updates.count + model.casks.count
-        return count == 0 ? "Everything is up to date" : "\(count) updates available"
+        return count == 0 ? "Everything is up to date" : count == 1 ? "1 update available" : "\(count) updates available"
     }
 
     private var errorShown: Binding<Bool> {
