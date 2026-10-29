@@ -6,7 +6,6 @@ enum Module: String, CaseIterable, Identifiable {
     case systemJunk = "System Junk"
     case clutter = "Clutter"
     case developer = "Developer"
-    case cloud = "Cloud"
     case uninstaller = "Uninstaller"
     case updater = "Updater"
     case protection = "Protection"
@@ -26,7 +25,6 @@ enum Module: String, CaseIterable, Identifiable {
         case .systemJunk: return "trash"
         case .clutter: return "doc.on.doc"
         case .developer: return "hammer"
-        case .cloud: return "icloud"
         case .uninstaller: return "xmark.app"
         case .updater: return "arrow.down.app"
         case .protection: return "checkmark.shield"
@@ -72,7 +70,6 @@ struct ContentView: View {
     @StateObject private var optimization = OptimizationModel()
     @StateObject private var malware = MalwareModel()
     @StateObject private var shredder = ShredderModel()
-    @StateObject private var cloud = CloudModel()
     @StateObject private var updater = UpdaterModel()
     @StateObject private var quarantine = QuarantineModel()
 
@@ -102,8 +99,6 @@ struct ContentView: View {
                                           note: "Caches a tool used in the last 30 days aren't selected, so its next install doesn't download everything again."))
             case .some(.clutter):
                 ClutterView(model: clutter)
-            case .some(.cloud):
-                CloudView(model: cloud)
             case .some(.uninstaller):
                 UninstallerView(model: uninstaller)
             case .some(.updater):
