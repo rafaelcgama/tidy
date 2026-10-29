@@ -108,7 +108,9 @@ final class UpdaterTests: XCTestCase {
 
     // MARK: - Tidy's own releases
 
-    let release = Data("""
+    // Not named `release`: XCTestCase is an NSObject, and a property by that name replaces
+    // Objective-C's -release, which crashed the whole test run.
+    let releaseJSON = Data("""
     {"tag_name": "build-202610291200", "name": "Tidy 1.1.0", "body": "Simpler Performance tab",
      "html_url": "https://github.com/rafaelcgama/clean-my-mac/releases/tag/build-202610291200",
      "assets": [{"name": "notes.txt", "browser_download_url": "https://example.invalid/notes.txt"},
@@ -116,7 +118,7 @@ final class UpdaterTests: XCTestCase {
     """.utf8)
 
     func testReadsTidysLatestRelease() throws {
-        let latest = try XCTUnwrap(TidyRelease.parse(release))
+        let latest = try XCTUnwrap(TidyRelease.parse(releaseJSON))
         XCTAssertEqual(latest.version, "1.1.0")
         XCTAssertEqual(latest.build, 202610291200)
         XCTAssertEqual(latest.notes, "Simpler Performance tab")
@@ -128,9 +130,9 @@ final class UpdaterTests: XCTestCase {
     }
 
     func testIgnoresReleasesThatArentTidyBuilds() {
-        let otherTag = Data(String(decoding: release, as: UTF8.self).replacingOccurrences(of: "build-202610291200\"", with: "v2\"").utf8)
+        let otherTag = Data(String(decoding: releaseJSON, as: UTF8.self).replacingOccurrences(of: "build-202610291200\"", with: "v2\"").utf8)
         XCTAssertNil(TidyRelease.parse(otherTag))
-        let noImage = Data(String(decoding: release, as: UTF8.self).replacingOccurrences(of: "\"Tidy.dmg\"", with: "\"Tidy.zip\"").utf8)
+        let noImage = Data(String(decoding: releaseJSON, as: UTF8.self).replacingOccurrences(of: "\"Tidy.dmg\"", with: "\"Tidy.zip\"").utf8)
         XCTAssertNil(TidyRelease.parse(noImage))
         XCTAssertNil(TidyRelease.parse(Data("not json".utf8)))
     }
@@ -138,9 +140,9 @@ final class UpdaterTests: XCTestCase {
     func testNoReleaseYetIsNotAnError() async throws {
         let none = try await TidyRelease.latest { _ in (Data(#"{"message": "Not Found"}"#.utf8), 404) }
         XCTAssertNil(none)
-        let found = try await TidyRelease.latest { [release] url in
+        let found = try await TidyRelease.latest { [releaseJSON] url in
             XCTAssertEqual(url, TidyRelease.latestURL)
-            return (release, 200)
+            return (releaseJSON, 200)
         }
         XCTAssertEqual(found?.build, 202610291200)
         do {

@@ -19,13 +19,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # The runner's default Xcode (16.4) crashes while loading the test bundle; use the newest one it has.
-      - name: Use the newest Xcode
-        run: |
-          XCODE="$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)"
-          sudo xcode-select -s "$XCODE"
-          xcodebuild -version
-
       # Each test runs in its own process, so a test that crashes is named and the rest still run.
       - name: Test
         run: swift test --parallel
