@@ -69,6 +69,12 @@ final class MonitorTests: XCTestCase {
         XCTAssertEqual(ProcessLoad.heavy(loads, cpuPercent: 10, memory: .max).map(\.name), ["busy", "quiet"])
     }
 
+    func testMemoryIsCountedLikeActivityMonitor() {
+        // 16 GB of RAM is 17.18 billion bytes: memory counts 1,024 to the kilobyte, files and disks 1,000.
+        XCTAssertTrue(ByteFormat.memory(17_179_869_184).hasPrefix("16"), ByteFormat.memory(17_179_869_184))
+        XCTAssertTrue(ByteFormat.string(17_179_869_184).hasPrefix("17"), ByteFormat.string(17_179_869_184))
+    }
+
     func testDiskSpace() throws {
         let disk = DiskSpace(total: 1_000, available: 250)
         XCTAssertEqual(disk.used, 750)

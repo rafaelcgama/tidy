@@ -37,7 +37,7 @@ struct MenuBarMonitorView: View {
             Sparkline(values: monitor.cpuHistory)
                 .frame(height: 30)
             if let memory = monitor.memory {
-                row("Memory", "\(StatFormat.bytes(memory.used)) of \(StatFormat.bytes(memory.total))")
+                row("Memory", "\(StatFormat.memory(memory.used)) of \(StatFormat.memory(memory.total))")
                 ProgressView(value: memory.usedFraction)
                     .tint(memory.pressure == .normal ? Color.accentColor : Color.orange)
             }
@@ -47,21 +47,6 @@ struct MenuBarMonitorView: View {
             }
             row("Network", "↓ \(StatFormat.rate(monitor.network.receivedPerSecond))  ↑ \(StatFormat.rate(monitor.network.sentPerSecond))")
             Divider()
-            Text("Busiest")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            ForEach(monitor.processes.prefix(5)) { process in
-                HStack {
-                    Text(monitor.app(for: process.pid)?.localizedName ?? process.name)
-                        .lineLimit(1)
-                    Spacer()
-                    Text(String(format: "%.0f%%", process.cpuPercent))
-                        .monospacedDigit()
-                        .foregroundStyle(.secondary)
-                }
-                .font(.callout)
-            }
-            Divider()
             HStack {
                 Button("Open Tidy") { showMainWindow() }
                 Spacer()
@@ -70,8 +55,6 @@ struct MenuBarMonitorView: View {
         }
         .padding(14)
         .frame(width: 300)
-        .onAppear { monitor.watchProcesses() }
-        .onDisappear { monitor.stopWatchingProcesses() }
     }
 
     private func row(_ title: String, _ value: String) -> some View {
