@@ -23,34 +23,20 @@ final class ScanCleanModel: ObservableObject {
 
     let store: QuarantineStore
     private let makeScanner: MakeScanner
-    private let preflight: (([ScanItem]) -> String?)?
     private var safePaths = SafePaths(allowedRoots: [])
     private var task: Task<Void, Never>?
-    private var appChanges: AnyCancellable?
 
-    /// `preflight` says why the selection can't be cleaned yet (say, an app that must be quit first).
     init(roots: [URL] = [],
          store: QuarantineStore = QuarantineStore(root: QuarantineStore.defaultRoot),
-         preflight: (([ScanItem]) -> String?)? = nil,
          makeScanner: @escaping MakeScanner) {
         self.roots = roots
         self.store = store
-        self.preflight = preflight
         self.makeScanner = makeScanner
-        if preflight != nil {
-            // Apps quitting or launching can change the answer, so the screen re-checks.
-            let center = NSWorkspace.shared.notificationCenter
-            appChanges = center.publisher(for: NSWorkspace.didTerminateApplicationNotification)
-                .merge(with: center.publisher(for: NSWorkspace.didLaunchApplicationNotification))
-                .receive(on: RunLoop.main)
-                .sink { [weak self] _ in self?.objectWillChange.send() }
-        }
     }
 
     var groups: [CategorySummary] { items.groupedByCategory() }
     var selectedItems: [ScanItem] { items.filter(\.isSelected) }
     var selectedSize: Int64 { items.selectedSize }
-    var blocker: String? { preflight?(selectedItems) }
 
     var rootsDescription: String {
         roots.map { $0.path.replacingOccurrences(of: NSHomeDirectory(), with: "~") }.joined(separator: ", ")
@@ -113,7 +99,6 @@ final class ScanCleanModel: ObservableObject {
     }
 
     func clean() {
-        guard blocker == nil else { return }
         let chosen = selectedItems
         let safePaths = self.safePaths
         phase = .cleaning

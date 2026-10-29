@@ -10,7 +10,6 @@ usage: tidy scan                 list system junk and its size
        tidy large [folder]       list files of 100 MB and up (default: home)
        tidy updates              list apps and Homebrew casks with newer versions
        tidy stats                CPU, memory, disk, network and the busiest processes
-       tidy privacy              list browser history, cookies, autofill and recent items
        tidy malware [path…]      check for malware (default: Downloads, apps, login items, shared and temporary folders)
        tidy malware --quarantine [path…]
                                  the same, then move what it finds to quarantine (asks first)
@@ -166,12 +165,6 @@ func run(_ args: [String]) async throws -> Int32 {
         return 1
         #endif
 
-    case "privacy":
-        let items = try await PrivacyScanner().scan { _ in }
-        printGroups(items)
-        print("\n\(items.count) items, \(ByteFormat.string(items.totalSize)). Nothing was changed; clean these from the app.")
-        return 0
-
     case "malware":
         let moving = args.contains("--quarantine")
         let paths = args.dropFirst().filter { $0 != "--quarantine" }.map { URL(fileURLWithPath: $0) }
@@ -184,7 +177,7 @@ func run(_ args: [String]) async throws -> Int32 {
         let report = try await scanner.scan()
         print("\nChecked \(report.scannedFiles) files (\(ByteFormat.string(report.scannedBytes))).")
         var notChecked: [String] = []
-        if report.unreadable > 0 { notChecked.append("\(report.unreadable) unreadable (Full Disk Access for Terminal lets tidy read more)") }
+        if report.unreadable > 0 { notChecked.append("\(report.unreadable) unreadable") }
         if report.tooLarge > 0 { notChecked.append("\(report.tooLarge) larger than \(ByteFormat.string(scanner.maxFileSize))") }
         if report.cloudOnly > 0 { notChecked.append("\(report.cloudOnly) only in iCloud") }
         if report.timedOut > 0 { notChecked.append("\(report.timedOut) too slow to scan") }

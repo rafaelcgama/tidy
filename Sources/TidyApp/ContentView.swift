@@ -10,7 +10,6 @@ enum Module: String, CaseIterable, Identifiable {
     case updater = "Updater"
     case protection = "Protection"
     case malware = "Malware Scan"
-    case privacy = "Privacy"
     case shredder = "Shredder"
     case optimization = "Optimization"
     case performance = "Performance"
@@ -29,7 +28,6 @@ enum Module: String, CaseIterable, Identifiable {
         case .updater: return "arrow.down.app"
         case .protection: return "checkmark.shield"
         case .malware: return "ladybug"
-        case .privacy: return "hand.raised"
         case .shredder: return "scissors"
         case .optimization: return "bolt"
         case .performance: return "speedometer"
@@ -57,10 +55,6 @@ struct ContentView: View {
     }
     @StateObject private var developer = ScanCleanModel(roots: [ContentView.defaultProjectsFolder]) { roots in
         let scanner = DeveloperJunkScanner(projectRoots: roots)
-        return (scanner, scanner.safePaths)
-    }
-    @StateObject private var privacy = ScanCleanModel(preflight: BrowserCheck.browsersToQuit) { _ in
-        let scanner = PrivacyScanner()
         return (scanner, scanner.safePaths)
     }
     @StateObject private var uninstaller = UninstallerModel()
@@ -107,13 +101,6 @@ struct ContentView: View {
                 ProtectionView(model: protection)
             case .some(.malware):
                 MalwareView(model: malware, reminders: reminders)
-            case .some(.privacy):
-                ScanCleanView(model: privacy,
-                              copy: .init(title: "Privacy",
-                                          symbol: "hand.raised.circle",
-                                          blurb: "Find browsing history, cookies, autofill data and saved tabs in Safari, Chrome, Firefox and other browsers, plus your recent items.",
-                                          note: "Passwords and bookmarks are never touched. Safari's data needs Full Disk Access. Firefox keeps history in the same file as bookmarks, so clear history in Firefox itself.",
-                                          emptyMessage: "No browsing data found."))
             case .some(.shredder):
                 ShredderView(model: shredder)
             case .some(.optimization):
