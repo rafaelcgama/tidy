@@ -153,14 +153,10 @@ struct SmartCareView: View {
                     }
                 }
 
-                Card(title: "Go further", symbol: "arrow.right.circle.fill", tint: .purple) {
-                    Text("These need your judgment, so Smart Care doesn't touch them.")
+                Card(title: "Apps", symbol: "xmark.app.fill", tint: .purple) {
+                    Text("Which apps to remove needs your judgment, so Smart Care leaves that to the Uninstaller, along with what removed apps left behind.")
                         .foregroundStyle(.secondary)
-                    HStack {
-                        Button("Duplicates & Large Files") { selection = .clutter }
-                        Button("Uninstall Apps") { selection = .uninstaller }
-                        Button("Space Map") { selection = .spaceMap }
-                    }
+                    Button("Open Uninstaller") { selection = .uninstaller }
                 }
 
                 HStack {

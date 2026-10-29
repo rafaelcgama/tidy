@@ -160,7 +160,7 @@ public struct QuarantineStore: @unchecked Sendable {
     }
 
     /// Permanently deletes batches older than the retention period.
-    /// Apart from `delete(batchID:)`, which you ask for, and the Shredder, this is the only place Tidy deletes anything for good.
+    /// Apart from `delete(batchID:)`, which you ask for, this is the only place Tidy deletes anything for good.
     @discardableResult
     public func purgeExpired(now: Date = Date()) throws -> [QuarantineBatch] {
         let cutoff = now.addingTimeInterval(-Double(retentionDays) * 86_400)
