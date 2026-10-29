@@ -19,8 +19,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Each test runs in its own process, so a test that crashes is named and the rest still run.
       - name: Test
-        run: swift test
+        run: swift test --parallel
 
       - name: Build Tidy.app and Tidy.dmg
         run: NO_OPEN=1 scripts/make-app.sh
