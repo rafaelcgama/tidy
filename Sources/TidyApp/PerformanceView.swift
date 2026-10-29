@@ -32,10 +32,10 @@ struct PerformanceView: View {
             Label("What starts with your Mac", systemImage: "power")
                 .font(.headline)
             VStack(alignment: .leading, spacing: 8) {
-                Text("Apps that open at login and items that run in the background slow down startup and use memory all day. System Settings lists every one of them and switches them on or off. Turn off any you don't need or don't recognize.")
+                Text("Apps that open at login and apps that run in the background slow down startup and use memory all day. System Settings › General › Login Items & Extensions lists both and switches them on or off: \"Open at Login\" at the top, and \"Allow in the Background\" (background activity) below it. Turn off any you don't need or don't recognize.")
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
-                Button("Open Login Items & Extensions") { SMAppService.openSystemSettingsLoginItems() }
+                Button("Open at Login & Background Activity…") { SMAppService.openSystemSettingsLoginItems() }
             }
             .padding(12)
             .frame(maxWidth: .infinity, alignment: .leading)
