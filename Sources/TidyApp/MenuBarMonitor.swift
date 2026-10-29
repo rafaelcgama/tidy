@@ -37,10 +37,8 @@ struct MenuBarMonitorView: View {
             if let release = tidy.available {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Tidy \(release.version) is available.")
-                    Button("Open Updater") {
-                        navigation.module = .updater
-                        showMainWindow()
-                    }
+                    Button("Update Tidy") { tidy.install() }
+                        .disabled(!tidy.canInstall || tidy.phase != .idle)
                 }
                 .padding(8)
                 .frame(maxWidth: .infinity, alignment: .leading)

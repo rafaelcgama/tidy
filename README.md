@@ -94,8 +94,8 @@ To make a build that opens anywhere without that step, you need an Apple Develop
 
 Once Tidy is installed, it updates itself like any other app:
 
-1. Open the **Updater** tab, or choose **Tidy › Check for Updates…**. Tidy also checks by itself when it starts, and the menu bar panel says when a new version is available.
-2. Click **Update Tidy**. Tidy downloads the new version, checks it, replaces itself and opens again.
+1. At the bottom of the sidebar, Tidy shows its version. Click **Check for Updates** there, or choose **Tidy › Check for Updates…**. Tidy also checks by itself when it starts, and the menu bar panel says when a new version is available.
+2. Click **Update to …**. Tidy downloads the new version, checks it, replaces itself and opens again. **What's New** shows what changed.
 
 New versions come from this repository's [releases](https://github.com/rafaelcgama/clean-my-mac/releases): every change merged into `main` is built and published there automatically. Your settings and Quarantine are kept, because they're stored outside the app.
 
@@ -151,9 +151,8 @@ The list shows when you last opened each app. Sort by **Last Opened** to find ap
 
 ### 4. Updater
 
-Click **Check for Updates** to find newer versions of Tidy and your apps:
+Click **Check for Updates** to find newer versions of your apps (Tidy itself updates from the bottom of the sidebar, see Updating above):
 
-- **Tidy itself:** when a new version is available, **What's New** shows what changed and **Update Tidy** installs it (see Updating above).
 - **Apps that update themselves (Sparkle):** Tidy checks each app's own update feed. **Release Notes** shows what's new. **Open App to Update** opens the app so its own updater installs the update. Beta versions, and versions that need a newer macOS, are skipped.
 - **Homebrew apps (casks):** **Update** updates them right from Tidy, including apps that are marked as updating themselves. If Homebrew can't update one, Tidy shows Homebrew's reason.
 

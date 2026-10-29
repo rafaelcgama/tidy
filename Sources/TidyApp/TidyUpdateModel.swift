@@ -1,5 +1,6 @@
 import AppKit
 import Combine
+import SwiftUI
 import TidyCore
 
 /// Updates Tidy itself from the releases GitHub builds from main. It checks once when Tidy starts and
@@ -138,5 +139,61 @@ enum TidyInstaller {
             throw Failure("\(URL(fileURLWithPath: tool).lastPathComponent) failed: \(text.isEmpty ? "exit code \(process.terminationStatus)" : text)")
         }
         return text
+    }
+}
+
+/// The bottom of the sidebar: Tidy's version, and the button that checks for and installs a new one.
+struct TidyUpdateFooter: View {
+    @ObservedObject var model: TidyUpdateModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Divider()
+            Text(status)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            switch model.phase {
+            case .checking, .downloading, .installing:
+                HStack(spacing: 6) {
+                    ProgressView()
+                        .controlSize(.small)
+                    Text(model.phase == .checking ? "Checking…" : model.phase == .downloading ? "Downloading…" : "Installing…")
+                        .font(.caption)
+                }
+            case .idle:
+                if let release = model.available {
+                    Button("Update to \(release.version)") { model.install() }
+                        .disabled(!model.canInstall)
+                        .help(model.canInstall ? "Downloads the new Tidy, replaces this one and opens it again." : "Only the Tidy installed in Applications can update itself.")
+                    Button("What's New") { model.openReleasePage() }
+                        .buttonStyle(.link)
+                        .font(.caption)
+                } else {
+                    Button("Check for Updates") { model.check() }
+                }
+            }
+        }
+        .controlSize(.small)
+        .padding(.horizontal, 12)
+        .padding(.bottom, 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .alert("Something went wrong", isPresented: errorShown) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(model.errorMessage ?? "")
+        }
+    }
+
+    private var status: String {
+        let name = model.installedVersion.map { "Tidy \($0)" } ?? "Tidy (in development)"
+        if model.phase == .installing { return "Tidy will reopen when it's done." }
+        if let release = model.available { return "Tidy \(release.version) is available. You have \(model.installedVersion ?? "a development copy")." }
+        return model.hasChecked && model.phase == .idle ? "\(name) · Up to date" : name
+    }
+
+    private var errorShown: Binding<Bool> {
+        Binding(get: { model.errorMessage != nil },
+                set: { if !$0 { model.errorMessage = nil } })
     }
 }

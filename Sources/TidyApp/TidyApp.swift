@@ -32,10 +32,8 @@ struct TidyApp: App {
         }
         .commands {
             CommandGroup(after: .appInfo) {
-                Button("Check for Updates…") {
-                    navigation.module = .updater
-                    TidyUpdateModel.shared.check()
-                }
+                // The answer shows at the bottom of the sidebar.
+                Button("Check for Updates…") { TidyUpdateModel.shared.check() }
             }
         }
         Settings {

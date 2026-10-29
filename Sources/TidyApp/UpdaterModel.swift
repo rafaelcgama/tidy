@@ -13,11 +13,9 @@ final class UpdaterModel: ObservableObject {
 
     let hasHomebrew = Homebrew.executable != nil
 
-    /// Checks Tidy itself too.
     func check() {
         guard !isChecking else { return }
         isChecking = true
-        TidyUpdateModel.shared.check()
         Task {
             let apps = await Task.detached { () -> [InstalledApp] in
                 AppInventory.apps(in: AppInventory.defaultFolders())
