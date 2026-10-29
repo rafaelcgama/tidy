@@ -26,20 +26,24 @@ struct PerformanceView: View {
     }
 
     /// System Settings is where macOS itself decides what may start, so Tidy sends you there rather
-    /// than keeping a list and switches of its own that can disagree with it.
+    /// than keeping a list and switches of its own that can disagree with it. All three lists are on
+    /// one page there (General › Login Items & Extensions); macOS can't open it at a given list.
     private var startupItems: some View {
         VStack(alignment: .leading, spacing: 10) {
             Label("What starts with your Mac", systemImage: "power")
                 .font(.headline)
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Apps that open at login and apps that run in the background slow down startup and use memory all day. System Settings › General › Login Items & Extensions lists both and switches them on or off: \"Open at Login\" at the top, and \"Allow in the Background\" (background activity) below it. Turn off any you don't need or don't recognize.")
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                Button("Open at Login & Background Activity…") { SMAppService.openSystemSettingsLoginItems() }
+            HStack(alignment: .top, spacing: 12) {
+                SettingsTile(title: "Open at Login",
+                             text: "Apps that open by themselves every time you log in. Each one makes startup slower and uses memory until you quit it. Turn off the ones you'd rather open yourself.",
+                             button: "Open at Login…")
+                SettingsTile(title: "Background Activity",
+                             text: "Small helpers that run out of sight, such as updaters and sync tools. They keep working even when their app is closed. Turn off any you don't need or don't recognize.",
+                             button: "Background Activity…")
+                SettingsTile(title: "Extensions",
+                             text: "Add-ons that plug into macOS itself, such as extra Share menu items or Finder previews. They load when you use those parts of macOS. Turn off any you don't recognize.",
+                             button: "Extensions…")
             }
-            .padding(12)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(RoundedRectangle(cornerRadius: 10).fill(Color.secondary.opacity(0.08)))
+            .fixedSize(horizontal: false, vertical: true)
         }
     }
 
@@ -86,6 +90,28 @@ struct PerformanceView: View {
                        text: "Your startup disk is almost full, which slows macOS down.",
                        actionTitle: "Free Up Space…") { selection = .smartCare }
         }
+    }
+}
+
+/// One list in System Settings: what it is in plain words, and a button that opens it.
+private struct SettingsTile: View {
+    let title: String
+    let text: String
+    let button: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.headline)
+            Text(text)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
+            Button(button) { SMAppService.openSystemSettingsLoginItems() }
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .background(RoundedRectangle(cornerRadius: 10).fill(Color.secondary.opacity(0.08)))
     }
 }
 
