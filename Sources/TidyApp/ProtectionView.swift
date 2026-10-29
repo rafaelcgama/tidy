@@ -1,7 +1,8 @@
 import SwiftUI
 import TidyCore
 
-/// Threat heuristics: suspicious launch jobs and browser settings locked by a policy.
+/// What could start on its own or watch you: suspicious launch jobs, browser settings locked by a policy,
+/// browser extensions, and the apps allowed to use the camera, microphone, screen and files.
 struct ProtectionView: View {
     @ObservedObject var model: ProtectionModel
     @State private var pendingRemoval: Finding?
@@ -9,36 +10,59 @@ struct ProtectionView: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Text(summary)
-                    .font(.headline)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(summary)
+                        .font(.headline)
+                    if let checked = model.lastChecked {
+                        Text("Checked \(model.items.count) startup items and \(model.extensions.count) browser extensions at \(checked.formatted(date: .omitted, time: .shortened)).")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
                 Spacer()
+                if model.isLoading {
+                    ProgressView()
+                        .controlSize(.small)
+                }
                 Button("Scan Again") { model.refresh() }
                     .disabled(model.isLoading)
             }
             .padding(12)
             Divider()
             if model.isLoading && !model.hasLoaded {
-                ProgressView("Checking login items, agents and browser policies…")
+                ProgressView("Checking startup items, browser extensions and privacy settings…")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if model.findings.isEmpty {
-                VStack(spacing: 10) {
-                    Image(systemName: "checkmark.shield")
-                        .font(.system(size: 56))
-                        .foregroundColor(.green)
-                    Text("Nothing suspicious found.")
-                        .font(.title3)
-                    Text("Tidy checks how things start on your Mac and whether your browser settings are locked. It doesn't replace macOS's built-in XProtect.")
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                }
-                .padding(40)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                List(model.findings) { finding in
-                    FindingRow(finding: finding,
-                               canRemove: model.canRemove(finding.url),
-                               reveal: { model.reveal(finding.url) },
-                               remove: { pendingRemoval = finding })
+                List {
+                    Section("Startup items and browser settings") {
+                        if model.findings.isEmpty {
+                            Label("Nothing suspicious found. Tidy checks how things start on your Mac, who signed the programs they run, and whether your browser settings are locked. It doesn't replace macOS's built-in XProtect.",
+                                  systemImage: "checkmark.shield")
+                                .foregroundStyle(.secondary)
+                                .padding(.vertical, 4)
+                        }
+                        ForEach(model.findings) { finding in
+                            FindingRow(finding: finding,
+                                       canRemove: model.canRemove(finding.url),
+                                       reveal: { model.reveal(finding.url) },
+                                       remove: { pendingRemoval = finding })
+                        }
+                    }
+                    Section("Browser extensions") {
+                        if model.extensions.isEmpty {
+                            Text("No browser extensions found.")
+                                .foregroundStyle(.secondary)
+                        }
+                        ForEach(model.extensions) { item in
+                            ExtensionRow(item: item, reveal: { model.reveal(item.url) })
+                        }
+                        Text("Turn an extension off or remove it in its browser's settings. Safari's extensions come with apps, so removing the app with the Uninstaller removes them too.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    Section("Camera, microphone, screen and files") {
+                        PermissionRows(report: model.permissions, open: { model.open($0) })
+                    }
                 }
             }
             if let notice = model.notice {
@@ -73,7 +97,7 @@ struct ProtectionView: View {
 
     private var summary: String {
         if !model.hasLoaded { return "Checking…" }
-        if model.findings.isEmpty { return "No findings" }
+        if model.findings.isEmpty { return "Nothing suspicious" }
         return "\(model.findings.count) findings, \(model.dangerCount) serious"
     }
 
@@ -139,6 +163,75 @@ private struct FindingRow: View {
         case .danger: return .red
         case .warning: return .orange
         case .notice: return .blue
+        }
+    }
+}
+
+private struct ExtensionRow: View {
+    let item: BrowserExtension
+    let reveal: () -> Void
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: "puzzlepiece.extension")
+                .font(.title2)
+                .foregroundColor(item.readsAllSites ? .orange : .secondary)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(item.name)
+                    .font(.headline)
+                Text([item.browser, item.version.map { "version \($0)" }, item.app.map { "comes with \($0)" }]
+                    .compactMap { $0 }.joined(separator: " · "))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                if item.readsAllSites {
+                    Text("Can read and change everything on every website you visit.")
+                        .foregroundColor(.orange)
+                }
+            }
+            Spacer()
+            Button("Reveal in Finder", action: reveal)
+        }
+        .padding(.vertical, 4)
+    }
+}
+
+/// The apps allowed each kind of access, with a way to the System Settings page that turns it off.
+private struct PermissionRows: View {
+    let report: PrivacyPermissions.Report?
+    let open: (URL) -> Void
+
+    var body: some View {
+        if let report {
+            if !report.isComplete {
+                HStack {
+                    Text(report.grants.isEmpty
+                         ? "Tidy needs Full Disk Access to see which apps can use your camera, microphone and screen."
+                         : "Some of these settings couldn't be read. With Full Disk Access, Tidy sees them all.")
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Button("Open Full Disk Access Settings") { open(PrivacyPermissions.fullDiskAccessSettings) }
+                }
+                .padding(.vertical, 4)
+            } else if report.grants.isEmpty {
+                Text("No app can use your camera, microphone or screen, see what you type, control your Mac or read every file.")
+                    .foregroundStyle(.secondary)
+            }
+            ForEach(PrivacyPermissions.kinds, id: \.service) { kind in
+                let names = report.grants.filter { $0.kind == kind }.map(\.name)
+                if !names.isEmpty {
+                    HStack(alignment: .top) {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(kind.title)
+                                .font(.headline)
+                            Text(names.joined(separator: ", "))
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Button("Change in System Settings") { open(kind.settingsURL) }
+                    }
+                    .padding(.vertical, 4)
+                }
+            }
         }
     }
 }

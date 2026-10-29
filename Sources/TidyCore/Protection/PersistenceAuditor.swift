@@ -25,8 +25,11 @@ public struct PersistenceAuditor: Sendable {
     static let suspiciousLocations = ["/tmp/", "/private/tmp/", "/var/tmp/", "/private/var/tmp/", "/var/folders/", "/private/var/folders/", "/Users/Shared/"]
     static let interpreters: Set<String> = ["sh", "bash", "zsh", "python", "python3", "perl", "ruby", "osascript", "curl"]
     static let downloadOrDecodeHints = ["curl ", "wget ", "base64", "| sh", "|sh", "| bash", "eval ", "http://", "https://"]
+    /// Homebrew and MacPorts build what they install without a developer's certificate, so their programs aren't signature-checked.
+    static let packageManagerFolders = ["/opt/homebrew/", "/usr/local/Cellar/", "/usr/local/opt/", "/usr/local/Homebrew/", "/opt/local/"]
 
-    public func audit(_ items: [LaunchItem], fileExists: (String) -> Bool = { FileManager.default.fileExists(atPath: $0) }) -> [Finding] {
+    public func audit(_ items: [LaunchItem], fileExists: (String) -> Bool = { FileManager.default.fileExists(atPath: $0) },
+                      signature: (String) -> CodeSignature = CodeSignature.check) -> [Finding] {
         items.compactMap { item in
             var reasons: [String] = []
             var severity = Finding.Severity.notice
@@ -36,6 +39,17 @@ public struct PersistenceAuditor: Sendable {
                     // Relative programs are resolved by launchd; nothing to check on disk.
                 } else if !fileExists(program) {
                     reasons.append("Starts a program that no longer exists (\(program)); probably left over from an uninstalled app.")
+                } else if !Self.isFromPackageManager(program) {
+                    switch signature(program) {
+                    case .notIdentified, .unsigned:
+                        reasons.append("Its program isn't signed by a developer Apple knows, so nothing shows who made it.")
+                        severity = max(severity, .warning)
+                    case .broken:
+                        reasons.append("Its program was changed after its developer signed it.")
+                        severity = max(severity, .warning)
+                    case .identified, .unknown:
+                        break
+                    }
                 }
                 if Self.suspiciousLocations.contains(where: { program.hasPrefix($0) }) {
                     reasons.append("Runs a program from a temporary or shared folder.")
@@ -65,6 +79,12 @@ public struct PersistenceAuditor: Sendable {
             return Finding(url: item.url, title: item.label, severity: severity, reasons: reasons)
         }
         .sorted { ($0.severity, $1.title) > ($1.severity, $0.title) }
+    }
+
+    /// Whether a program is where Homebrew or MacPorts put it, following links such as /usr/local/bin's.
+    static func isFromPackageManager(_ program: String) -> Bool {
+        let path = URL(fileURLWithPath: program).resolvingSymlinksInPath().path
+        return packageManagerFolders.contains { path.hasPrefix($0) }
     }
 }
 
