@@ -2,14 +2,11 @@ import AppKit
 import Combine
 import TidyCore
 
-/// Launch jobs (login items, agents, daemons) and the threat heuristics that run over them, plus the
-/// browser extensions and privacy permissions that could be used to watch you.
+/// Launch jobs (login items, agents, daemons) and the threat heuristics that run over them.
 @MainActor
 final class ProtectionModel: ObservableObject {
     @Published private(set) var items: [LaunchItem] = []
     @Published private(set) var findings: [Finding] = []
-    @Published private(set) var extensions: [BrowserExtension] = []
-    @Published private(set) var permissions: PrivacyPermissions.Report?
     @Published private(set) var isLoading = false
     @Published private(set) var hasLoaded = false
     /// When the last check finished, so Scan Again visibly does something.
@@ -31,16 +28,12 @@ final class ProtectionModel: ObservableObject {
     func refresh() {
         isLoading = true
         Task {
-            let (items, findings, extensions, permissions) = await Task.detached {
-                () -> ([LaunchItem], [Finding], [BrowserExtension], PrivacyPermissions.Report) in
+            let (items, findings) = await Task.detached { () -> ([LaunchItem], [Finding]) in
                 let items = LaunchItemReader.items(in: LaunchItemReader.defaultFolders())
-                return (items, PersistenceAuditor().audit(items) + BrowserPolicyAuditor().audit(),
-                        BrowserExtensionReader().extensions(), PrivacyPermissions().read())
+                return (items, PersistenceAuditor().audit(items) + BrowserPolicyAuditor().audit())
             }.value
             self.items = items
             self.findings = findings
-            self.extensions = extensions
-            self.permissions = permissions
             isLoading = false
             hasLoaded = true
             lastChecked = Date()
@@ -96,7 +89,7 @@ final class ProtectionModel: ObservableObject {
         NSWorkspace.shared.activateFileViewerSelecting([url])
     }
 
-    /// A System Settings page, such as the one where an app's camera access is turned off.
+    /// A System Settings page, such as the one listing the apps that may use the camera.
     func open(_ url: URL) {
         NSWorkspace.shared.open(url)
     }

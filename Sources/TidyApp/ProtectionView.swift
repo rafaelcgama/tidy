@@ -1,8 +1,8 @@
 import SwiftUI
 import TidyCore
 
-/// What could start on its own or watch you: suspicious launch jobs, browser settings locked by a policy,
-/// browser extensions, and the apps allowed to use the camera, microphone, screen and files.
+/// What could start on its own or watch you: suspicious launch jobs and browser settings locked by a policy,
+/// plus shortcuts to the System Settings pages that list who may use the camera, microphone and screen.
 struct ProtectionView: View {
     @ObservedObject var model: ProtectionModel
     @State private var pendingRemoval: Finding?
@@ -14,7 +14,7 @@ struct ProtectionView: View {
                     Text(summary)
                         .font(.headline)
                     if let checked = model.lastChecked {
-                        Text("Checked \(model.items.count) startup items and \(model.extensions.count) browser extensions at \(checked.formatted(date: .omitted, time: .shortened)).")
+                        Text("Checked \(model.items.count) startup items at \(checked.formatted(date: .omitted, time: .shortened)).")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -30,7 +30,7 @@ struct ProtectionView: View {
             .padding(12)
             Divider()
             if model.isLoading && !model.hasLoaded {
-                ProgressView("Checking startup items, browser extensions and privacy settings…")
+                ProgressView("Checking startup items…")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 List {
@@ -48,20 +48,15 @@ struct ProtectionView: View {
                                        remove: { pendingRemoval = finding })
                         }
                     }
-                    Section("Browser extensions") {
-                        if model.extensions.isEmpty {
-                            Text("No browser extensions found.")
-                                .foregroundStyle(.secondary)
-                        }
-                        ForEach(model.extensions) { item in
-                            ExtensionRow(item: item, reveal: { model.reveal(item.url) })
-                        }
-                        Text("Turn an extension off or remove it in its browser's settings. Safari's extensions come with apps, so removing the app with the Uninstaller removes them too.")
-                            .font(.caption)
+                    Section("Camera, microphone and screen") {
+                        Text("System Settings lists the apps allowed to use your camera, microphone and screen, see what you type (Input Monitoring) or control your Mac (Accessibility). Turn off any you don't recognize.")
                             .foregroundStyle(.secondary)
-                    }
-                    Section("Camera, microphone, screen and files") {
-                        PermissionRows(report: model.permissions, open: { model.open($0) })
+                        HStack {
+                            ForEach(Self.privacyPages) { page in
+                                Button(page.title) { model.open(page.url) }
+                            }
+                        }
+                        .padding(.vertical, 4)
                     }
                 }
             }
@@ -100,6 +95,23 @@ struct ProtectionView: View {
         if model.findings.isEmpty { return "Nothing suspicious" }
         return "\(model.findings.count) findings, \(model.dangerCount) serious"
     }
+
+    /// A System Settings page under Privacy & Security. macOS lists there who may use what; Tidy would need
+    /// Full Disk Access to read that itself, and it goes without.
+    private struct SettingsPage: Identifiable {
+        let title: String
+        let anchor: String
+        var id: String { anchor }
+        var url: URL { URL(string: "x-apple.systempreferences:com.apple.preference.security?\(anchor)")! }
+    }
+
+    private static let privacyPages = [
+        SettingsPage(title: "Camera", anchor: "Privacy_Camera"),
+        SettingsPage(title: "Microphone", anchor: "Privacy_Microphone"),
+        SettingsPage(title: "Screen Recording", anchor: "Privacy_ScreenCapture"),
+        SettingsPage(title: "Input Monitoring", anchor: "Privacy_ListenEvent"),
+        SettingsPage(title: "Accessibility", anchor: "Privacy_Accessibility"),
+    ]
 
     private var removalShown: Binding<Bool> {
         Binding(get: { pendingRemoval != nil }, set: { if !$0 { pendingRemoval = nil } })
@@ -163,75 +175,6 @@ private struct FindingRow: View {
         case .danger: return .red
         case .warning: return .orange
         case .notice: return .blue
-        }
-    }
-}
-
-private struct ExtensionRow: View {
-    let item: BrowserExtension
-    let reveal: () -> Void
-
-    var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            Image(systemName: "puzzlepiece.extension")
-                .font(.title2)
-                .foregroundColor(item.readsAllSites ? .orange : .secondary)
-            VStack(alignment: .leading, spacing: 3) {
-                Text(item.name)
-                    .font(.headline)
-                Text([item.browser, item.version.map { "version \($0)" }, item.app.map { "comes with \($0)" }]
-                    .compactMap { $0 }.joined(separator: " · "))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                if item.readsAllSites {
-                    Text("Can read and change everything on every website you visit.")
-                        .foregroundColor(.orange)
-                }
-            }
-            Spacer()
-            Button("Reveal in Finder", action: reveal)
-        }
-        .padding(.vertical, 4)
-    }
-}
-
-/// The apps allowed each kind of access, with a way to the System Settings page that turns it off.
-private struct PermissionRows: View {
-    let report: PrivacyPermissions.Report?
-    let open: (URL) -> Void
-
-    var body: some View {
-        if let report {
-            if !report.isComplete {
-                HStack {
-                    Text(report.grants.isEmpty
-                         ? "Tidy needs Full Disk Access to see which apps can use your camera, microphone and screen."
-                         : "Some of these settings couldn't be read. With Full Disk Access, Tidy sees them all.")
-                        .foregroundStyle(.secondary)
-                    Spacer()
-                    Button("Open Full Disk Access Settings") { open(PrivacyPermissions.fullDiskAccessSettings) }
-                }
-                .padding(.vertical, 4)
-            } else if report.grants.isEmpty {
-                Text("No app can use your camera, microphone or screen, see what you type, control your Mac or read every file.")
-                    .foregroundStyle(.secondary)
-            }
-            ForEach(PrivacyPermissions.kinds, id: \.service) { kind in
-                let names = report.grants.filter { $0.kind == kind }.map(\.name)
-                if !names.isEmpty {
-                    HStack(alignment: .top) {
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text(kind.title)
-                                .font(.headline)
-                            Text(names.joined(separator: ", "))
-                                .foregroundStyle(.secondary)
-                        }
-                        Spacer()
-                        Button("Change in System Settings") { open(kind.settingsURL) }
-                    }
-                    .padding(.vertical, 4)
-                }
-            }
         }
     }
 }
