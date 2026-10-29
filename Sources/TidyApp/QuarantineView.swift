@@ -1,10 +1,13 @@
 import SwiftUI
 import TidyCore
 
-/// Each clean of the last weeks, what it moved, Put Back, and deleting it for good sooner.
+/// Each clean of the last weeks and what it moved. Tick cleans to put them back or delete them for good
+/// sooner, or delete everything at once.
 struct QuarantineView: View {
     @ObservedObject var model: QuarantineModel
     @State private var expanded: Set<String> = []
+    /// The ticked cleans, by id.
+    @State private var chosen: Set<String> = []
 
     var body: some View {
         VStack(spacing: 0) {
@@ -37,6 +40,8 @@ struct QuarantineView: View {
                         }
                     } label: {
                         HStack {
+                            Toggle("", isOn: choice(of: batch.id))
+                                .labelsHidden()
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(batch.date.formatted(date: .abbreviated, time: .shortened))
                                 Text("\(batch.entries.count) items, \(ByteFormat.string(batch.totalSize)) · " + (model.daysLeft(batch) > 0
@@ -49,16 +54,36 @@ struct QuarantineView: View {
                                 ProgressView()
                                     .controlSize(.small)
                             }
+                        }
+                        .contextMenu {
                             Button("Show in Finder") { model.reveal(batch) }
-                            Button("Delete Now…") { model.pendingDeletion = [batch] }
-                                .disabled(model.restoring != nil || model.deleting)
-                            Button("Put Back") { model.restore(batch) }
-                                .disabled(model.restoring != nil || model.deleting)
                         }
                     }
                 }
                 Divider()
-                Text((model.batches.count == 1 ? "1 clean" : "\(model.batches.count) cleans") + ", \(ByteFormat.string(model.totalSize)) in all. Each is deleted for good \(model.store.retentionDays) days after it was cleaned; Delete Now and Empty Quarantine do it sooner, and that can't be undone.")
+                HStack {
+                    Button(allChosen ? "Deselect All" : "Select All") {
+                        chosen = allChosen ? [] : Set(model.batches.map(\.id))
+                    }
+                    Text(chosenBatches.isEmpty
+                         ? "Tick the cleans to put back or delete."
+                         : "\(Self.cleans(chosenBatches.count)) selected, \(ByteFormat.string(chosenBatches.reduce(0) { $0 + $1.totalSize }))")
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    if model.deleting {
+                        ProgressView()
+                            .controlSize(.small)
+                    }
+                    Button("Put Back Selected") { model.restore(chosenBatches) }
+                        .disabled(chosenBatches.isEmpty || busy)
+                    Button("Delete Selected…") { model.pendingDeletion = chosenBatches }
+                        .disabled(chosenBatches.isEmpty || busy)
+                    Button("Delete All…") { model.pendingDeletion = model.batches }
+                        .disabled(busy)
+                }
+                .padding(.horizontal, 12)
+                .padding(.top, 10)
+                Text(Self.cleans(model.batches.count) + ", \(ByteFormat.string(model.totalSize)) in all. Each is deleted for good \(model.store.retentionDays) days after it was cleaned; Delete Selected and Delete All do it sooner, and that can't be undone. Right-click a clean to show it in Finder.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -73,18 +98,12 @@ struct QuarantineView: View {
         }
         .navigationTitle("Quarantine")
         .toolbar {
-            if model.deleting {
-                ProgressView()
-                    .controlSize(.small)
-            }
-            Button("Empty Quarantine…") { model.pendingDeletion = model.batches }
-                .disabled(model.batches.isEmpty || model.deleting || model.restoring != nil)
             Button("Refresh") { model.refresh() }
         }
         .onAppear { model.refresh() }
         .sheet(isPresented: deletionShown) {
             if let batches = model.pendingDeletion {
-                DeleteForGoodSheet(batches: batches, emptiesAll: batches.count == model.batches.count && batches.count > 1,
+                DeleteForGoodSheet(batches: batches, emptiesAll: batches.count == model.batches.count,
                                    needsPassword: model.needsPassword(batches)) {
                     model.deleteForGood(batches)
                 } onCancel: {
@@ -97,6 +116,23 @@ struct QuarantineView: View {
         } message: {
             Text(model.errorMessage ?? "")
         }
+    }
+
+    private var busy: Bool { model.restoring != nil || model.deleting }
+
+    /// The ticked cleans that are still in quarantine.
+    private var chosenBatches: [QuarantineBatch] { model.batches.filter { chosen.contains($0.id) } }
+
+    private var allChosen: Bool { chosenBatches.count == model.batches.count }
+
+    /// "1 clean" or "3 cleans".
+    private static func cleans(_ count: Int) -> String { count == 1 ? "1 clean" : "\(count) cleans" }
+
+    private func choice(of id: String) -> Binding<Bool> {
+        Binding(get: { chosen.contains(id) },
+                set: { isOn in
+                    if isOn { chosen.insert(id) } else { chosen.remove(id) }
+                })
     }
 
     private var errorShown: Binding<Bool> {
@@ -128,7 +164,7 @@ private struct DeleteForGoodSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(emptiesAll ? "Empty Quarantine?" : "Delete these items for good?")
+            Text(emptiesAll ? "Delete everything in Quarantine for good?" : "Delete these items for good?")
                 .font(.title2.bold())
             Text("\(entries.count) items, \(ByteFormat.string(totalSize)). They'll be deleted for good and can't be put back.")
                 .foregroundStyle(.secondary)
