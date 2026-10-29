@@ -32,7 +32,7 @@ struct PerformanceView: View {
         VStack(alignment: .leading, spacing: 10) {
             Label("What starts with your Mac", systemImage: "power")
                 .font(.headline)
-            HStack(alignment: .top, spacing: 12) {
+            VStack(alignment: .leading, spacing: 12) {
                 SettingsTile(title: "Open at Login",
                              text: "Apps that open by themselves every time you log in. Each one makes startup slower and uses memory until you quit it. Turn off the ones you'd rather open yourself.",
                              button: "Open at Login…")
@@ -43,7 +43,6 @@ struct PerformanceView: View {
                              text: "Add-ons that plug into macOS itself, such as extra Share menu items or Finder previews. They load when you use those parts of macOS. Turn off any you don't recognize.",
                              button: "Extensions…")
             }
-            .fixedSize(horizontal: false, vertical: true)
         }
     }
 
@@ -106,11 +105,10 @@ private struct SettingsTile: View {
             Text(text)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
-            Spacer(minLength: 0)
             Button(button) { SMAppService.openSystemSettingsLoginItems() }
         }
         .padding(12)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .background(RoundedRectangle(cornerRadius: 10).fill(Color.secondary.opacity(0.08)))
     }
 }
