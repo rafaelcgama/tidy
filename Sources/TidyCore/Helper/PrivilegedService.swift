@@ -2,13 +2,11 @@ import Foundation
 
 public enum HelperError: Error, Equatable, LocalizedError {
     case invalidBatchID(String)
-    case unknownTask(String)
     case commandFailed(command: String, status: Int32)
 
     public var errorDescription: String? {
         switch self {
         case .invalidBatchID(let id): return "No usable quarantine batch named \"\(id)\"."
-        case .unknownTask(let name): return "Tidy's helper has no task named \"\(name)\"."
         case .commandFailed(let command, let status): return "\(command) stopped with exit code \(status)."
         }
     }
@@ -109,13 +107,6 @@ public struct PrivilegedService: Sendable {
         guard FileManager.default.fileExists(atPath: store.root.path) else { return [] }
         try SecureFileOps.prepareTrustedFolder(store.root.path, owner: trustedOwner)
         return try store.purgeExpired(now: now)
-    }
-
-    public func runMaintenance(_ name: String) throws {
-        guard let task = MaintenanceTask(rawValue: name) else { throw HelperError.unknownTask(name) }
-        for command in task.commands {
-            try run(command)
-        }
     }
 
     /// Runs a program and waits for it; a non-zero exit is an error.

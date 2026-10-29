@@ -45,7 +45,6 @@ struct ContentView: View {
     }
     @StateObject private var uninstaller = UninstallerModel()
     @StateObject private var protection = ProtectionModel()
-    @StateObject private var optimization = OptimizationModel()
     @StateObject private var malware = MalwareModel()
     @StateObject private var updater = UpdaterModel()
     @StateObject private var quarantine = QuarantineModel()
@@ -77,7 +76,7 @@ struct ContentView: View {
             case .some(.malware):
                 MalwareView(model: malware, reminders: reminders)
             case .some(.performance):
-                PerformanceView(monitor: monitor, model: optimization, selection: $navigation.module)
+                PerformanceView(monitor: monitor, selection: $navigation.module)
             case .some(.quarantine):
                 QuarantineView(model: quarantine)
             case .none:
