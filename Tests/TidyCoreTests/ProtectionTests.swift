@@ -85,6 +85,31 @@ final class ProtectionTests: XCTestCase {
         XCTAssertTrue(findings.first?.reasons.first?.contains("no longer exists") == true)
     }
 
+    func testFlagsStartupProgramsNoDeveloperSigned() {
+        let signatures: [String: CodeSignature] = [
+            "/Applications/Signed.app/Contents/MacOS/agent": .identified,
+            "/Library/Application Support/Unsigned/agent": .unsigned,
+            "/Library/Application Support/AdHoc/agent": .notIdentified,
+            "/Library/Application Support/Changed/agent": .broken,
+            "/opt/homebrew/opt/postgresql@16/bin/postgres": .notIdentified,
+        ]
+        let checked = Recorder<String>()
+        let findings = PersistenceAuditor().audit([
+            item(label: "com.example.signed", program: "/Applications/Signed.app/Contents/MacOS/agent"),
+            item(label: "com.example.unsigned", program: "/Library/Application Support/Unsigned/agent"),
+            item(label: "com.example.adhoc", program: "/Library/Application Support/AdHoc/agent"),
+            item(label: "com.example.changed", program: "/Library/Application Support/Changed/agent"),
+            item(label: "homebrew.mxcl.postgresql@16", program: "/opt/homebrew/opt/postgresql@16/bin/postgres"),
+            item(label: "com.gone.helper", program: "/Applications/Gone.app/helper"),
+        ], fileExists: { !$0.hasPrefix("/Applications/Gone.app") }, signature: { checked.add($0); return signatures[$0] ?? .unknown })
+
+        XCTAssertEqual(Set(findings.map(\.title)), ["com.example.unsigned", "com.example.adhoc", "com.example.changed", "com.gone.helper"])
+        XCTAssertEqual(Set(findings.filter { $0.title != "com.gone.helper" }.map(\.severity)), [.warning])
+        XCTAssertTrue(findings.first { $0.title == "com.example.changed" }?.reasons == ["Its program was changed after its developer signed it."])
+        XCTAssertFalse(checked.all.contains { $0.hasPrefix("/opt/homebrew/") || $0.hasPrefix("/Applications/Gone.app") },
+                       "Homebrew builds its programs without a developer's certificate, and a missing program has nothing to check")
+    }
+
     func testMismatchedNameIsWorthALookForSystemJobs() {
         let findings = PersistenceAuditor().audit([item(label: "com.apple.fake", file: "com.random.xyz", program: "/usr/local/bin/x", scope: .daemon)],
                                                   fileExists: { _ in true })

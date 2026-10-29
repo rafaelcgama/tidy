@@ -9,6 +9,8 @@ final class ProtectionModel: ObservableObject {
     @Published private(set) var findings: [Finding] = []
     @Published private(set) var isLoading = false
     @Published private(set) var hasLoaded = false
+    /// When the last check finished, so Scan Again visibly does something.
+    @Published private(set) var lastChecked: Date?
     @Published private(set) var notice: String?
     @Published var errorMessage: String?
 
@@ -34,6 +36,7 @@ final class ProtectionModel: ObservableObject {
             self.findings = findings
             isLoading = false
             hasLoaded = true
+            lastChecked = Date()
         }
     }
 
@@ -84,5 +87,10 @@ final class ProtectionModel: ObservableObject {
 
     func reveal(_ url: URL) {
         NSWorkspace.shared.activateFileViewerSelecting([url])
+    }
+
+    /// A System Settings page, such as the one listing the apps that may use the camera.
+    func open(_ url: URL) {
+        NSWorkspace.shared.open(url)
     }
 }

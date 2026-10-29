@@ -1,7 +1,8 @@
 import SwiftUI
 import TidyCore
 
-/// Threat heuristics: suspicious launch jobs and browser settings locked by a policy.
+/// What could start on its own or watch you: suspicious launch jobs and browser settings locked by a policy,
+/// plus shortcuts to the System Settings pages that list who may use the camera, microphone and screen.
 struct ProtectionView: View {
     @ObservedObject var model: ProtectionModel
     @State private var pendingRemoval: Finding?
@@ -9,36 +10,54 @@ struct ProtectionView: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Text(summary)
-                    .font(.headline)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(summary)
+                        .font(.headline)
+                    if let checked = model.lastChecked {
+                        Text("Checked \(model.items.count) startup items at \(checked.formatted(date: .omitted, time: .shortened)).")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
                 Spacer()
+                if model.isLoading {
+                    ProgressView()
+                        .controlSize(.small)
+                }
                 Button("Scan Again") { model.refresh() }
                     .disabled(model.isLoading)
             }
             .padding(12)
             Divider()
             if model.isLoading && !model.hasLoaded {
-                ProgressView("Checking login items, agents and browser policies…")
+                ProgressView("Checking startup items…")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if model.findings.isEmpty {
-                VStack(spacing: 10) {
-                    Image(systemName: "checkmark.shield")
-                        .font(.system(size: 56))
-                        .foregroundColor(.green)
-                    Text("Nothing suspicious found.")
-                        .font(.title3)
-                    Text("Tidy checks how things start on your Mac and whether your browser settings are locked. It doesn't replace macOS's built-in XProtect.")
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                }
-                .padding(40)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                List(model.findings) { finding in
-                    FindingRow(finding: finding,
-                               canRemove: model.canRemove(finding.url),
-                               reveal: { model.reveal(finding.url) },
-                               remove: { pendingRemoval = finding })
+                List {
+                    Section("Startup items and browser settings") {
+                        if model.findings.isEmpty {
+                            Label("Nothing suspicious found. Tidy checks how things start on your Mac, who signed the programs they run, and whether your browser settings are locked. It doesn't replace macOS's built-in XProtect.",
+                                  systemImage: "checkmark.shield")
+                                .foregroundStyle(.secondary)
+                                .padding(.vertical, 4)
+                        }
+                        ForEach(model.findings) { finding in
+                            FindingRow(finding: finding,
+                                       canRemove: model.canRemove(finding.url),
+                                       reveal: { model.reveal(finding.url) },
+                                       remove: { pendingRemoval = finding })
+                        }
+                    }
+                    Section("Camera, microphone and screen") {
+                        Text("System Settings lists the apps allowed to use your camera, microphone and screen, see what you type (Input Monitoring) or control your Mac (Accessibility). Turn off any you don't recognize.")
+                            .foregroundStyle(.secondary)
+                        HStack {
+                            ForEach(Self.privacyPages) { page in
+                                Button(page.title) { model.open(page.url) }
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
                 }
             }
             if let notice = model.notice {
@@ -73,9 +92,26 @@ struct ProtectionView: View {
 
     private var summary: String {
         if !model.hasLoaded { return "Checking…" }
-        if model.findings.isEmpty { return "No findings" }
+        if model.findings.isEmpty { return "Nothing suspicious" }
         return "\(model.findings.count) findings, \(model.dangerCount) serious"
     }
+
+    /// A System Settings page under Privacy & Security. macOS lists there who may use what; Tidy would need
+    /// Full Disk Access to read that itself, and it goes without.
+    private struct SettingsPage: Identifiable {
+        let title: String
+        let anchor: String
+        var id: String { anchor }
+        var url: URL { URL(string: "x-apple.systempreferences:com.apple.preference.security?\(anchor)")! }
+    }
+
+    private static let privacyPages = [
+        SettingsPage(title: "Camera", anchor: "Privacy_Camera"),
+        SettingsPage(title: "Microphone", anchor: "Privacy_Microphone"),
+        SettingsPage(title: "Screen Recording", anchor: "Privacy_ScreenCapture"),
+        SettingsPage(title: "Input Monitoring", anchor: "Privacy_ListenEvent"),
+        SettingsPage(title: "Accessibility", anchor: "Privacy_Accessibility"),
+    ]
 
     private var removalShown: Binding<Bool> {
         Binding(get: { pendingRemoval != nil }, set: { if !$0 { pendingRemoval = nil } })
