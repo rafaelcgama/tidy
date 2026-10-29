@@ -1,24 +1,20 @@
 import AppKit
+import ServiceManagement
 import SwiftUI
 import TidyCore
 
-/// How busy the Mac is and the switches for what starts with it, in one place.
+/// How busy the Mac is, and where to see what starts with it.
 struct PerformanceView: View {
     @ObservedObject var monitor: SystemMonitor
-    @ObservedObject var model: OptimizationModel
     @Binding var selection: Module?
     @AppStorage("showMenuBarMonitor") private var showMenuBarMonitor = true
-    @AppStorage("readLoginApps") private var readLoginApps = false
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
                 tiles
                 suggestions
-                Text("Fewer things starting with your Mac means a faster startup and more free memory all day. Switching something off doesn't delete it: switch it back on any time.")
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                StartupItems(model: model)
+                startupItems
             }
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -26,21 +22,25 @@ struct PerformanceView: View {
         .navigationTitle("Performance")
         .toolbar {
             Toggle("Show in Menu Bar", isOn: $showMenuBarMonitor)
-            Button("Refresh") {
-                model.refresh()
-                if readLoginApps { model.loadLoginApps() }
-            }
-            .disabled(model.isLoading)
-        }
-        .alert("Something went wrong", isPresented: errorShown) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text(model.errorMessage ?? "")
         }
     }
 
-    private var errorShown: Binding<Bool> {
-        Binding(get: { model.errorMessage != nil }, set: { if !$0 { model.errorMessage = nil } })
+    /// System Settings is where macOS itself decides what may start, so Tidy sends you there rather
+    /// than keeping a list and switches of its own that can disagree with it.
+    private var startupItems: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Label("What starts with your Mac", systemImage: "power")
+                .font(.headline)
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Apps that open at login and items that run in the background slow down startup and use memory all day. System Settings lists every one of them and switches them on or off. Turn off any you don't need or don't recognize.")
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Button("Open Login Items & Extensions") { SMAppService.openSystemSettingsLoginItems() }
+            }
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(RoundedRectangle(cornerRadius: 10).fill(Color.secondary.opacity(0.08)))
+        }
     }
 
     /// Three boxes of the same height, each read live from macOS; click one to see more in Activity Monitor or Finder.

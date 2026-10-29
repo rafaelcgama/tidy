@@ -172,63 +172,7 @@ final class AdminTests: XCTestCase {
         XCTAssertEqual(AdminCommand.handle(["Tidy"] + restore, service: service, isRoot: true)?.status, 1, "no such batch")
     }
 
-    // MARK: - Launch jobs
-
-    private func job(_ label: String, scope: LaunchItem.Scope = .userAgent, disabled: Bool = false) -> LaunchItem {
-        LaunchItem(url: tmp.appendingPathComponent("LaunchAgents/\(label).plist"), label: label, program: "/bin/true",
-                   arguments: [], runAtLoad: true, keepAlive: false, disabled: disabled, scope: scope)
-    }
-
-    func testReadsLaunchdsSwitches() {
-        let output = """
-            disabled services = {
-            \t"com.apple.ftp-proxy" => disabled
-            \t"com.foo.agent" => enabled
-            \t"com.bar.old" => true
-            \t"com.bar.new" => false
-            }
-
-            login item associations = {
-            \t"com.foo.agent" => disabled
-            }
-            """
-        XCTAssertEqual(LaunchJobControl.parseSwitches(output),
-                       ["com.apple.ftp-proxy": true, "com.foo.agent": false, "com.bar.old": true, "com.bar.new": false])
-    }
-
-    func testLaunchdsSwitchWinsOverThePlist() {
-        XCTAssertFalse(LaunchJobControl.isOn(job("com.foo.agent", disabled: true), switches: [:]))
-        XCTAssertTrue(LaunchJobControl.isOn(job("com.foo.agent", disabled: true), switches: ["com.foo.agent": false]))
-        XCTAssertFalse(LaunchJobControl.isOn(job("com.foo.agent"), switches: ["com.foo.agent": true]))
-        XCTAssertTrue(LaunchJobControl.isOn(job("com.foo.agent"), switches: ["com.other": true]))
-    }
-
-    func testSwitchingAgentsAndDaemons() throws {
-        let agent = job("com.foo.agent")
-        XCTAssertEqual(try LaunchJobControl.steps(for: agent, on: true, uid: 501), [
-            AdminPrompt.Step(["/bin/launchctl", "enable", "gui/501/com.foo.agent"]),
-            AdminPrompt.Step(["/bin/launchctl", "bootstrap", "gui/501", agent.url.path], mayFail: true),
-        ])
-        let daemon = job("com.foo.daemon", scope: .daemon)
-        XCTAssertEqual(try LaunchJobControl.steps(for: daemon, on: false, uid: 501), [
-            AdminPrompt.Step(["/bin/launchctl", "disable", "system/com.foo.daemon"]),
-            AdminPrompt.Step(["/bin/launchctl", "bootout", "system/com.foo.daemon"], mayFail: true),
-        ])
-        XCTAssertTrue(LaunchJobControl.needsAdmin(daemon))
-        XCTAssertFalse(LaunchJobControl.needsAdmin(agent))
-        XCTAssertEqual(LaunchJobControl.domain(for: .globalAgent, uid: 501), "gui/501")
-        XCTAssertThrowsError(try LaunchJobControl.steps(for: job("bad; rm -rf ~"), on: false, uid: 501))
-    }
-
-    func testLabelsTidyPassesToLaunchctl() {
-        XCTAssertTrue(LaunchJobControl.isUsableLabel("com.foo.agent"))
-        XCTAssertTrue(LaunchJobControl.isUsableLabel("application.com.foo.123_45@x+y-z"))
-        XCTAssertFalse(LaunchJobControl.isUsableLabel(""))
-        XCTAssertFalse(LaunchJobControl.isUsableLabel("-h"))
-        XCTAssertFalse(LaunchJobControl.isUsableLabel("a b"))
-        XCTAssertFalse(LaunchJobControl.isUsableLabel("a/b"))
-        XCTAssertFalse(LaunchJobControl.isUsableLabel(String(repeating: "a", count: 256)))
-    }
+    // MARK: - Launch agents
 
     func testOnlyAgentsAreStoppedAndStartedInYourSession() {
         let home = URL(fileURLWithPath: "/Users/someone")
@@ -238,72 +182,5 @@ final class AdminTests: XCTestCase {
                        "the helper stops daemons")
         XCTAssertFalse(LaunchJobControl.isAgent(home.appendingPathComponent("Library/LaunchAgents/notes.txt"), home: home))
         XCTAssertFalse(LaunchJobControl.isAgent(home.appendingPathComponent("Library/LaunchAgents/old/com.foo.plist"), home: home))
-    }
-
-    // MARK: - Apps that open at login
-
-    /// Answers like System Events: the list from list.txt, or "not allowed" while a file named deny exists.
-    private static let fakeSystemEvents = """
-        dir=$(dirname "$0")
-        for arg in "$@"; do printf '%s\\n' "$arg" >> "$dir/calls.log"; done
-        echo "--" >> "$dir/calls.log"
-        if [ -f "$dir/deny" ]; then
-            echo "0:0: execution error: Not authorized to send Apple events to System Events. (-1743)" >&2
-            exit 1
-        fi
-        case "$*" in *"repeat with loginItem"*) cat "$dir/list.txt";; esac
-        exit 0
-        """
-
-    /// The arguments of each osascript run so far.
-    private func calls() throws -> [[String]] {
-        let log = try String(contentsOf: tmp.appendingPathComponent("calls.log"), encoding: .utf8)
-        return log.components(separatedBy: "--\n").filter { !$0.isEmpty }.map { $0.split(separator: "\n", omittingEmptySubsequences: false).map(String.init).dropLast() }
-    }
-
-    func testListsTurnsOffAndTurnsBackOnAppsThatOpenAtLogin() throws {
-        let osascript = try script("osascript", Self.fakeSystemEvents)
-        let dropbox = try folder("Apps/Dropbox.app")
-        let notes = try folder("Apps/Notes.app")
-        try write("list.txt", "Dropbox\n\(dropbox.path)\nfalse\nNotes\n\(notes.path)\ntrue\n")
-        let apps = LoginApps(storeURL: tmp.appendingPathComponent("store/turned-off.json"), osascript: osascript)
-
-        let listed = try apps.list()
-        XCTAssertEqual(listed.on, [LoginApp(name: "Dropbox", path: dropbox.path, hidden: false),
-                                   LoginApp(name: "Notes", path: notes.path, hidden: true)])
-        XCTAssertTrue(listed.off.isEmpty)
-
-        try apps.turnOff(listed.on[0])
-        let off = try XCTUnwrap(try calls().last)
-        XCTAssertTrue(off.contains { $0.contains("delete (every login item whose path is (item 1 of argv))") })
-        XCTAssertEqual(off.last, dropbox.path, "the path arrives as data")
-        try write("list.txt", "Notes\n\(notes.path)\ntrue\n")
-        XCTAssertEqual(try apps.list().off.map(\.name), ["Dropbox"], "remembered, so it can go back on")
-
-        try apps.turnOn(LoginApp(name: "Dropbox", path: dropbox.path, hidden: false))
-        let on = try XCTUnwrap(try calls().last)
-        XCTAssertTrue(on.contains { $0.contains("make login item at end") })
-        XCTAssertEqual(Array(on.suffix(2)), [dropbox.path, "false"])
-        XCTAssertTrue(try apps.list().off.isEmpty)
-    }
-
-    func testForgetsTurnedOffAppsThatAreGone() throws {
-        let osascript = try script("osascript", Self.fakeSystemEvents)
-        try write("list.txt", "")
-        let apps = LoginApps(storeURL: tmp.appendingPathComponent("store/turned-off.json"), osascript: osascript)
-        try apps.turnOff(LoginApp(name: "Gone", path: tmp.appendingPathComponent("Apps/Gone.app").path, hidden: false))
-        XCTAssertTrue(try apps.list().off.isEmpty)
-    }
-
-    func testSaysWhenMacOSDoesntLetTidyAskSystemEvents() throws {
-        let osascript = try script("osascript", Self.fakeSystemEvents)
-        try write("deny", "")
-        let apps = LoginApps(storeURL: tmp.appendingPathComponent("store/turned-off.json"), osascript: osascript)
-        XCTAssertThrowsError(try apps.list()) { XCTAssertEqual($0 as? LoginApps.Failure, .notAllowed) }
-    }
-
-    func testParsesLoginItems() {
-        let parsed = LoginApps.parse("\n/Applications/A.app\nfalse\nweird\nnot-a-path\ntrue\nB\n/Applications/B.app\n")
-        XCTAssertEqual(parsed, [LoginApp(name: "A", path: "/Applications/A.app", hidden: false)])
     }
 }
