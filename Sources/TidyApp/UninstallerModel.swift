@@ -42,10 +42,13 @@ final class UninstallerModel: ObservableObject {
     private var installedBundleIDs: Set<String> = []
     private var loadTask: Task<Void, Never>?
     private var scanTask: Task<Void, Never>?
+    private let watcher = FolderWatcher()
 
     init(store: QuarantineStore = QuarantineStore(root: QuarantineStore.defaultRoot), finder: LeftoverFinder = LeftoverFinder()) {
         self.store = store
         self.finder = finder
+        // Whenever an app is added to or removed from Applications, the list follows.
+        watcher.onChange = { [weak self] in self?.loadApps() }
     }
 
     var filteredApps: [InstalledApp] {
@@ -89,6 +92,7 @@ final class UninstallerModel: ObservableObject {
             self.apps = apps
             self.installedBundleIDs = ids
             self.lastOpened = usage
+            watcher.watch(AppInventory.foldersHoldingApps(AppInventory.defaultFolders()))
         }
     }
 
@@ -188,5 +192,45 @@ final class UninstallerModel: ObservableObject {
 
     func finish() {
         selection = nil
+    }
+}
+
+/// Calls `onChange` shortly after anything is added to, removed from or renamed in the folders it watches.
+@MainActor
+final class FolderWatcher {
+    var onChange: (() -> Void)?
+    private var sources: [String: DispatchSourceFileSystemObject] = [:]
+    private var pending: DispatchWorkItem?
+
+    /// Watches exactly these folders from now on.
+    func watch(_ folders: [URL]) {
+        let paths = Set(folders.map(\.path))
+        for (path, source) in sources where !paths.contains(path) {
+            source.cancel()
+            sources[path] = nil
+        }
+        for path in paths where sources[path] == nil {
+            let descriptor = open(path, O_EVTONLY)
+            guard descriptor >= 0 else { continue }
+            let source = DispatchSource.makeFileSystemObjectSource(fileDescriptor: descriptor, eventMask: [.write, .rename, .delete], queue: .main)
+            source.setEventHandler { [weak self] in
+                Task { @MainActor in self?.changed() }
+            }
+            source.setCancelHandler { close(descriptor) }
+            source.resume()
+            sources[path] = source
+        }
+    }
+
+    /// Installers copy an app in many steps; wait until they've settled before reading the folder again.
+    private func changed() {
+        pending?.cancel()
+        let work = DispatchWorkItem { [weak self] in self?.onChange?() }
+        pending = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5, execute: work)
+    }
+
+    deinit {
+        sources.values.forEach { $0.cancel() }
     }
 }

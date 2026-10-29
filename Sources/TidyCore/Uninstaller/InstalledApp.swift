@@ -51,6 +51,15 @@ public enum AppInventory {
     /// Folders whose apps can't be uninstalled but whose bundle ids still count as installed.
     public static let systemFolders = [URL(fileURLWithPath: "/System/Applications")]
 
+    /// The folders `apps(in:)` reads: the folders themselves and the folders one level down.
+    public static func foldersHoldingApps(_ folders: [URL]) -> [URL] {
+        let fm = FileManager.default
+        return folders.filter { fm.fileExists(atPath: $0.path) } + folders.flatMap { folder in
+            ((try? fm.contentsOfDirectory(at: folder, includingPropertiesForKeys: [.isDirectoryKey], options: [.skipsHiddenFiles])) ?? [])
+                .filter { $0.pathExtension != "app" && (try? $0.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true }
+        }
+    }
+
     /// Apps directly inside the folders, plus one level down (Utilities, vendor folders).
     public static func apps(in folders: [URL]) -> [InstalledApp] {
         let fm = FileManager.default

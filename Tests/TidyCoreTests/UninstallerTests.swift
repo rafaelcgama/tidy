@@ -60,6 +60,14 @@ final class UninstallerTests: XCTestCase {
         XCTAssertEqual(apps.first?.name, "Bar", "falls back to the bundle's file name")
     }
 
+    func testWatchesTheFoldersItReadsAppsFrom() throws {
+        try makeApp("Applications/Foo.app", bundleID: "com.foo.app")
+        try makeApp("Applications/Utilities/Bar.app", bundleID: "com.bar.app")
+        let applications = tmp.appendingPathComponent("Applications")
+        let watched = AppInventory.foldersHoldingApps([applications, tmp.appendingPathComponent("Missing")])
+        XCTAssertEqual(watched.map(\.lastPathComponent).sorted(), ["Applications", "Utilities"])
+    }
+
     func testListsIPhoneAndIPadAppsInstalledOnTheMac() throws {
         // Their Info.plist sits in Wrapper/<name>.app, not in Contents.
         let inner = tmp.appendingPathComponent("Applications/Liminal.app/Wrapper/Liminal.app")
