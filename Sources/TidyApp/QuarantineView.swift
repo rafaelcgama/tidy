@@ -1,10 +1,13 @@
 import SwiftUI
 import TidyCore
 
-/// Each clean of the last weeks, what it moved, Put Back, and deleting it for good sooner.
+/// Each clean of the last weeks, what it moved, Put Back, and deleting it for good sooner, one clean
+/// at a time or several ticked together.
 struct QuarantineView: View {
     @ObservedObject var model: QuarantineModel
     @State private var expanded: Set<String> = []
+    /// The ticked cleans, by id.
+    @State private var chosen: Set<String> = []
 
     var body: some View {
         VStack(spacing: 0) {
@@ -37,6 +40,8 @@ struct QuarantineView: View {
                         }
                     } label: {
                         HStack {
+                            Toggle("", isOn: choice(of: batch.id))
+                                .labelsHidden()
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(batch.date.formatted(date: .abbreviated, time: .shortened))
                                 Text("\(batch.entries.count) items, \(ByteFormat.string(batch.totalSize)) · " + (model.daysLeft(batch) > 0
@@ -51,14 +56,30 @@ struct QuarantineView: View {
                             }
                             Button("Show in Finder") { model.reveal(batch) }
                             Button("Delete Now…") { model.pendingDeletion = [batch] }
-                                .disabled(model.restoring != nil || model.deleting)
-                            Button("Put Back") { model.restore(batch) }
-                                .disabled(model.restoring != nil || model.deleting)
+                                .disabled(busy)
+                            Button("Put Back") { model.restore([batch]) }
+                                .disabled(busy)
                         }
                     }
                 }
                 Divider()
-                Text((model.batches.count == 1 ? "1 clean" : "\(model.batches.count) cleans") + ", \(ByteFormat.string(model.totalSize)) in all. Each is deleted for good \(model.store.retentionDays) days after it was cleaned; Delete Now and Empty Quarantine do it sooner, and that can't be undone.")
+                HStack {
+                    Button(chosenBatches.count == model.batches.count ? "Deselect All" : "Select All") {
+                        chosen = chosenBatches.count == model.batches.count ? [] : Set(model.batches.map(\.id))
+                    }
+                    Text(chosenBatches.isEmpty
+                         ? "Tick cleans to put back or delete several at once."
+                         : "\(Self.cleans(chosenBatches.count)) selected, \(ByteFormat.string(chosenBatches.reduce(0) { $0 + $1.totalSize }))")
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Button("Put Back Selected") { model.restore(chosenBatches) }
+                        .disabled(chosenBatches.isEmpty || busy)
+                    Button("Delete Selected…") { model.pendingDeletion = chosenBatches }
+                        .disabled(chosenBatches.isEmpty || busy)
+                }
+                .padding(.horizontal, 12)
+                .padding(.top, 10)
+                Text(Self.cleans(model.batches.count) + ", \(ByteFormat.string(model.totalSize)) in all. Each is deleted for good \(model.store.retentionDays) days after it was cleaned; Delete Now, Delete Selected and Empty Quarantine do it sooner, and that can't be undone.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -97,6 +118,21 @@ struct QuarantineView: View {
         } message: {
             Text(model.errorMessage ?? "")
         }
+    }
+
+    private var busy: Bool { model.restoring != nil || model.deleting }
+
+    /// The ticked cleans that are still in quarantine.
+    private var chosenBatches: [QuarantineBatch] { model.batches.filter { chosen.contains($0.id) } }
+
+    /// "1 clean" or "3 cleans".
+    private static func cleans(_ count: Int) -> String { count == 1 ? "1 clean" : "\(count) cleans" }
+
+    private func choice(of id: String) -> Binding<Bool> {
+        Binding(get: { chosen.contains(id) },
+                set: { isOn in
+                    if isOn { chosen.insert(id) } else { chosen.remove(id) }
+                })
     }
 
     private var errorShown: Binding<Bool> {
