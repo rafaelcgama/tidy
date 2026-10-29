@@ -276,7 +276,6 @@ Built with the app and included in it at `Tidy.app/Contents/Helpers/tidy`, or ru
 - `Tests/TidyCoreTests`: the tests
 - `Resources`: icon, `Info.plist`, entitlements, the helper's launchd file
 - `scripts`: `make-app.sh` (app and .dmg), `check.sh` (build and test), `make-icon.py` (icon)
-- `project-context.md`: the original spec
 
 ### Branches
 
