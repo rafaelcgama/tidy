@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 import TidyCore
 
@@ -6,6 +7,7 @@ import TidyCore
 struct ProtectionView: View {
     @ObservedObject var model: ProtectionModel
     @State private var pendingRemoval: Finding?
+    @State private var browsers: [Browser] = []
 
     var body: some View {
         VStack(spacing: 0) {
@@ -48,15 +50,39 @@ struct ProtectionView: View {
                                        remove: { pendingRemoval = finding })
                         }
                     }
-                    Section("Camera, microphone and screen") {
-                        Text("System Settings lists the apps allowed to use your camera, microphone and screen, see what you type (Input Monitoring) or control your Mac (Accessibility). Turn off any you don't recognize.")
-                            .foregroundStyle(.secondary)
-                        HStack {
-                            ForEach(Self.privacyPages) { page in
-                                Button(page.title) { model.open(page.url) }
+                    Section {
+                        ForEach(Self.privacyPages) { page in
+                            OpenRow(title: page.title, detail: page.detail, button: "Open") {
+                                Image(systemName: page.symbol)
+                                    .foregroundColor(.white)
+                                    .frame(width: 26, height: 26)
+                                    .background(RoundedRectangle(cornerRadius: 6).fill(page.tint))
+                            } action: {
+                                model.open(page.url)
                             }
                         }
-                        .padding(.vertical, 4)
+                    } header: {
+                        SectionTitle(title: "Apps that can watch you or control your Mac",
+                                     detail: "Listed in System Settings. Turn off any you don't recognize.")
+                    }
+                    Section {
+                        ForEach(browsers) { browser in
+                            OpenRow(title: browser.name, detail: browser.hint,
+                                    button: browser.page == nil ? "Open \(browser.name)" : "Open") {
+                                Image(nsImage: NSWorkspace.shared.icon(forFile: browser.app.path))
+                                    .resizable()
+                                    .frame(width: 26, height: 26)
+                            } action: {
+                                model.open(browser)
+                            }
+                        }
+                    } header: {
+                        SectionTitle(title: "Websites that can watch you",
+                                     detail: "Listed in each browser. Remove any site you don't recognize.")
+                    } footer: {
+                        Text("Only browsers on your Mac are listed.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                     }
                 }
             }
@@ -73,6 +99,7 @@ struct ProtectionView: View {
         .navigationTitle("Protection")
         .onAppear {
             if !model.hasLoaded { model.refresh() }
+            browsers = Browser.installed()
         }
         .confirmationDialog("Stop this from starting at login?",
                             isPresented: removalShown,
@@ -100,17 +127,25 @@ struct ProtectionView: View {
     /// Full Disk Access to read that itself, and it goes without.
     private struct SettingsPage: Identifiable {
         let title: String
+        let detail: String
+        let symbol: String
+        let tint: Color
         let anchor: String
         var id: String { anchor }
         var url: URL { URL(string: "x-apple.systempreferences:com.apple.preference.security?\(anchor)")! }
     }
 
     private static let privacyPages = [
-        SettingsPage(title: "Camera", anchor: "Privacy_Camera"),
-        SettingsPage(title: "Microphone", anchor: "Privacy_Microphone"),
-        SettingsPage(title: "Screen Recording", anchor: "Privacy_ScreenCapture"),
-        SettingsPage(title: "Input Monitoring", anchor: "Privacy_ListenEvent"),
-        SettingsPage(title: "Accessibility", anchor: "Privacy_Accessibility"),
+        SettingsPage(title: "Camera", detail: "Apps that can turn on your camera",
+                     symbol: "video.fill", tint: .green, anchor: "Privacy_Camera"),
+        SettingsPage(title: "Microphone", detail: "Apps that can listen through your microphone",
+                     symbol: "mic.fill", tint: .orange, anchor: "Privacy_Microphone"),
+        SettingsPage(title: "Screen Recording", detail: "Apps that can see everything on your screen",
+                     symbol: "rectangle.inset.filled.on.rectangle", tint: .purple, anchor: "Privacy_ScreenCapture"),
+        SettingsPage(title: "Input Monitoring", detail: "Apps that can see what you type, passwords included",
+                     symbol: "keyboard", tint: .gray, anchor: "Privacy_ListenEvent"),
+        SettingsPage(title: "Accessibility", detail: "Apps that can control your Mac: click, type and read other apps' windows",
+                     symbol: "accessibility", tint: .blue, anchor: "Privacy_Accessibility"),
     ]
 
     private var removalShown: Binding<Bool> {
@@ -120,6 +155,47 @@ struct ProtectionView: View {
     private var errorShown: Binding<Bool> {
         Binding(get: { model.errorMessage != nil },
                 set: { if !$0 { model.errorMessage = nil } })
+    }
+}
+
+/// A section title with a line under it saying where the list lives and what to do with it.
+private struct SectionTitle: View {
+    let title: String
+    let detail: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title)
+            Text(detail)
+                .font(.callout)
+                .fontWeight(.regular)
+                .foregroundStyle(.secondary)
+        }
+        .padding(.top, 8)
+    }
+}
+
+/// One thing to check: an icon, what it is, what it allows, and a button that opens where it's listed.
+private struct OpenRow<Icon: View>: View {
+    let title: String
+    let detail: String
+    let button: String
+    @ViewBuilder let icon: () -> Icon
+    let action: () -> Void
+
+    var body: some View {
+        HStack(spacing: 10) {
+            icon()
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                Text(detail)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            Button(button, action: action)
+        }
+        .padding(.vertical, 4)
     }
 }
 
