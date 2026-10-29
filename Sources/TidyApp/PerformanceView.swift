@@ -25,24 +25,35 @@ struct PerformanceView: View {
         }
     }
 
-    /// System Settings is where macOS itself decides what may start, so Tidy sends you there rather
-    /// than keeping a list and switches of its own that can disagree with it. All three lists are on
-    /// one page there (General › Login Items & Extensions); macOS can't open it at a given list.
+    /// System Settings is where macOS itself decides what may start, so Tidy explains its three lists
+    /// and sends you there rather than keeping lists and switches of its own that can disagree with it.
+    /// All three are on one page there (General › Login Items & Extensions).
     private var startupItems: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Label("What starts with your Mac", systemImage: "power")
+            Text("What starts with your Mac")
                 .font(.headline)
-            VStack(alignment: .leading, spacing: 12) {
-                SettingsTile(title: "Open at Login",
-                             text: "Apps that open by themselves every time you log in. Each one makes startup slower and uses memory until you quit it. Turn off the ones you'd rather open yourself.",
-                             button: "Open at Login…")
-                SettingsTile(title: "Background Activity",
-                             text: "Small helpers that run out of sight, such as updaters and sync tools. They keep working even when their app is closed. Turn off any you don't need or don't recognize.",
-                             button: "Background Activity…")
-                SettingsTile(title: "Extensions",
-                             text: "Add-ons that plug into macOS itself, such as extra Share menu items or Finder previews. They load when you use those parts of macOS. Turn off any you don't recognize.",
-                             button: "Extensions…")
+            VStack(alignment: .leading, spacing: 0) {
+                StartupRow(symbol: "power", tint: .blue, title: "Open at Login",
+                           text: "Apps that open by themselves every time you log in. Each one makes startup slower and uses memory until you quit it.")
+                Divider()
+                StartupRow(symbol: "gearshape.fill", tint: .gray, title: "Background Activity",
+                           text: "Hidden helpers, such as updaters and sync tools, that keep running even when their app is closed.")
+                Divider()
+                StartupRow(symbol: "puzzlepiece.extension.fill", tint: .purple, title: "Extensions",
+                           text: "Add-ons that plug into macOS itself, such as extra Share menu items or Finder previews.")
+                Divider()
+                HStack(spacing: 16) {
+                    Text("All three are on one page in System Settings. Turn off anything you don't need or don't recognize.")
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Spacer(minLength: 0)
+                    Button("Open System Settings…") { SMAppService.openSystemSettingsLoginItems() }
+                }
+                .padding(.vertical, 10)
             }
+            .padding(.horizontal, 14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(RoundedRectangle(cornerRadius: 10).fill(Color.secondary.opacity(0.08)))
         }
     }
 
@@ -92,24 +103,30 @@ struct PerformanceView: View {
     }
 }
 
-/// One list in System Settings: what it is in plain words, and a button that opens it.
-private struct SettingsTile: View {
+/// One of the lists in System Settings: an icon, its name, and what it is in plain words.
+private struct StartupRow: View {
+    let symbol: String
+    let tint: Color
     let title: String
     let text: String
-    let button: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(title)
-                .font(.headline)
-            Text(text)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-            Button(button) { SMAppService.openSystemSettingsLoginItems() }
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: symbol)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundColor(.white)
+                .frame(width: 28, height: 28)
+                .background(RoundedRectangle(cornerRadius: 7).fill(tint))
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .bold()
+                Text(text)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 0)
         }
-        .padding(12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: 10).fill(Color.secondary.opacity(0.08)))
+        .padding(.vertical, 10)
     }
 }
 
