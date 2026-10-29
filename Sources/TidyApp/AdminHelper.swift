@@ -174,18 +174,6 @@ final class AdminHelper: ObservableObject {
         if let failure { throw Failure(message: failure) }
     }
 
-    /// Through the helper when it's installed; otherwise macOS asks for an administrator's password.
-    func run(_ task: MaintenanceTask) async throws {
-        guard isEnabled else {
-            _ = try await Self.runAsRoot(task.commands.map { AdminPrompt.Step($0) }, prompt: task.passwordPrompt)
-            return
-        }
-        let failure: String? = try await call { helper, done in
-            helper.runMaintenance(task.rawValue) { done(.success($0)) }
-        }
-        if let failure { throw Failure(message: failure) }
-    }
-
     private nonisolated static func result(_ data: Data?, _ error: String?) -> Result<Data, Error> {
         if let data { return .success(data) }
         return .failure(Failure(message: error ?? "Tidy's helper didn't answer."))

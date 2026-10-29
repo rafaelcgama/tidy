@@ -76,7 +76,7 @@ private struct HelperSettings: View {
 
     var body: some View {
         Form {
-            Text("Some cleanup needs administrator rights: system caches and logs, apps installed for all users and their background items, and the maintenance tasks in Optimization. Without the helper, macOS asks for an administrator's password each time. With it, Tidy's admin helper does that work without asking: it stays in a short list of system folders, refuses anything macOS protects, and moves items to a quarantine you can undo, like everything else Tidy cleans.")
+            Text("Some cleanup needs administrator rights: system caches and logs, and apps installed for all users and their background items. Without the helper, macOS asks for an administrator's password each time. With it, Tidy's admin helper does that work without asking: it stays in a short list of system folders, refuses anything macOS protects, and moves items to a quarantine you can undo, like everything else Tidy cleans.")
                 .fixedSize(horizontal: false, vertical: true)
             LabeledContent("Status") {
                 Text(helper.statusText)

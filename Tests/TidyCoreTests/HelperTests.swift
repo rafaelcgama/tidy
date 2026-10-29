@@ -229,17 +229,6 @@ final class HelperTests: XCTestCase {
         XCTAssertTrue(fm.fileExists(atPath: cache.path))
     }
 
-    func testMaintenanceRunsOnlyItsFixedCommands() throws {
-        final class Recorder: @unchecked Sendable { var commands: [[String]] = [] }
-        let recorder = Recorder()
-        let service = PrivilegedService(policy: HelperPolicy(folders: []), store: QuarantineStore(root: tmp),
-                                        trustedOwner: me, run: { recorder.commands.append($0) })
-        try service.runMaintenance("flushDNS")
-        XCTAssertEqual(recorder.commands, [["/usr/bin/dscacheutil", "-flushcache"], ["/usr/bin/killall", "-HUP", "mDNSResponder"]])
-        XCTAssertThrowsError(try service.runMaintenance("rm -rf /"))
-        XCTAssertEqual(recorder.commands.count, 2)
-    }
-
     func testRepliesSurviveTheTripOverXPC() throws {
         let entry = QuarantineEntry(originalPath: "/Library/Caches/x", storedPath: "items/0/x", size: 5, category: "System caches")
         let reply = HelperQuarantineReply(batch: QuarantineBatch(id: "20261028-101500-1A2B3C4D", date: Date(), entries: [entry]),

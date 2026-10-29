@@ -10,15 +10,13 @@ import Security
     func quarantine(_ request: Data, reply: @escaping (Data?, String?) -> Void)
     /// The reply is a HelperRestoreReply or an error message.
     func restore(batchID: String, reply: @escaping (Data?, String?) -> Void)
-    /// `task` is a MaintenanceTask raw value; the reply is nil on success, or an error message.
-    func runMaintenance(_ task: String, reply: @escaping (String?) -> Void)
     /// `request` is a HelperDeleteRequest; the reply is nil once those batches are deleted for good, or an error message.
     func delete(_ request: Data, reply: @escaping (String?) -> Void)
 }
 
 public enum HelperIdentity {
     /// Changes whenever TidyHelperXPC does.
-    public static let version = "2"
+    public static let version = "3"
 
     /// The helper's launchd label and mach service (Resources/Helper.plist), from the app's bundle id.
     public static func machServiceName(appBundleID: String) -> String {

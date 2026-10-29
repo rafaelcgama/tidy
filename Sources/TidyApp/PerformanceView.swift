@@ -2,7 +2,7 @@ import AppKit
 import SwiftUI
 import TidyCore
 
-/// How busy the Mac is, the switches for what starts with it, and the maintenance tasks, in one place.
+/// How busy the Mac is and the switches for what starts with it, in one place.
 struct PerformanceView: View {
     @ObservedObject var monitor: SystemMonitor
     @ObservedObject var model: OptimizationModel
@@ -19,9 +19,6 @@ struct PerformanceView: View {
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                 StartupItems(model: model)
-                PerformanceSection(title: "Maintenance", symbol: "wrench.and.screwdriver") {
-                    MaintenanceTasks()
-                }
             }
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)

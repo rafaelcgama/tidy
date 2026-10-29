@@ -3,9 +3,9 @@ import Foundation
 import TidyCore
 
 // Tidy's privileged helper: a launchd daemon that the app registers with SMAppService. It answers
-// only the Tidy app signed by the same team, and it can do five things: say its version, move
+// only the Tidy app signed by the same team, and it can do four things: say its version, move
 // root-owned items into a quarantine only root can change, put a batch back, delete batches of that
-// quarantine for good when you ask, and run three fixed maintenance commands. HelperPolicy decides
+// quarantine for good when you ask. HelperPolicy decides
 // what it may touch.
 
 final class HelperService: NSObject, TidyHelperXPC {
@@ -35,15 +35,6 @@ final class HelperService: NSObject, TidyHelperXPC {
             reply(try HelperCoding.encode(try service.restore(batchID: batchID)), nil)
         } catch {
             reply(nil, error.localizedDescription)
-        }
-    }
-
-    func runMaintenance(_ task: String, reply: @escaping (String?) -> Void) {
-        do {
-            try service.runMaintenance(task)
-            reply(nil)
-        } catch {
-            reply(error.localizedDescription)
         }
     }
 
