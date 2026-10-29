@@ -46,31 +46,35 @@ struct PerformanceView: View {
         Binding(get: { model.errorMessage != nil }, set: { if !$0 { model.errorMessage = nil } })
     }
 
+    /// Three boxes of the same height, each read live from macOS; click one to see more in Activity Monitor or Finder.
     private var tiles: some View {
         HStack(alignment: .top, spacing: 12) {
-            StatTile(title: "CPU", value: StatFormat.percent(monitor.cpu),
-                     detail: "Average over all cores", fraction: monitor.cpu) {
-                Sparkline(values: monitor.cpuHistory)
-                    .frame(height: 28)
-            }
-            StatTile(title: "Memory",
-                     value: monitor.memory.map { "\(StatFormat.memory($0.used)) of \(StatFormat.memory($0.total))" } ?? "–",
-                     detail: memoryDetail, fraction: monitor.memory?.usedFraction) { EmptyView() }
-            StatTile(title: "Startup Disk",
+            StatTile(title: "CPU", opens: "Activity Monitor",
+                     value: "\(StatFormat.percent(monitor.cpu)) used",
+                     detail: "of \(ProcessInfo.processInfo.activeProcessorCount) cores",
+                     fraction: monitor.cpu) { ActivityMonitor.open(.cpu) }
+            StatTile(title: "RAM", opens: "Activity Monitor",
+                     value: monitor.memory.map { "\(StatFormat.memory($0.used)) used" } ?? "–",
+                     detail: monitor.memory.map { "of \(StatFormat.memory($0.total))" } ?? "",
+                     fraction: monitor.memory?.usedFraction, tint: memoryTint,
+                     exact: monitor.memory.map { "\($0.total.formatted()) bytes of RAM, as macOS reports it" }) { ActivityMonitor.open(.memory) }
+            StatTile(title: "Hard Drive", opens: "Finder",
                      value: monitor.disk.map { "\(ByteFormat.string($0.available)) free" } ?? "–",
                      detail: monitor.disk.map { "of \(ByteFormat.string($0.total))" } ?? "",
-                     fraction: monitor.disk?.usedFraction) { EmptyView() }
-            StatTile(title: "Network", value: "↓ \(StatFormat.rate(monitor.network.receivedPerSecond))",
-                     detail: "↑ \(StatFormat.rate(monitor.network.sentPerSecond))", fraction: nil) { EmptyView() }
+                     fraction: monitor.disk?.usedFraction,
+                     exact: monitor.disk.map { "\($0.total.formatted()) bytes on the startup disk, as macOS reports it" }) {
+                NSWorkspace.shared.open(FileManager.default.homeDirectoryForCurrentUser)
+            }
         }
+        .fixedSize(horizontal: false, vertical: true)
     }
 
-    private var memoryDetail: String {
-        guard let memory = monitor.memory else { return "" }
-        switch memory.pressure {
-        case .normal: return "Pressure normal · \(StatFormat.memory(memory.cached)) cached files"
-        case .warning: return "Pressure high"
-        case .critical: return "Pressure critical"
+    /// The bar turns orange or red when macOS is short of memory, like Activity Monitor's pressure graph.
+    private var memoryTint: Color? {
+        switch monitor.memory?.pressure {
+        case .warning: return .orange
+        case .critical: return .red
+        default: return nil
         }
     }
 
@@ -88,35 +92,61 @@ struct PerformanceView: View {
     }
 }
 
-private struct StatTile<Extra: View>: View {
+private struct StatTile: View {
     let title: String
+    let opens: String
     let value: String
     let detail: String
     let fraction: Double?
-    @ViewBuilder let extra: () -> Extra
+    var tint: Color?
+    var exact: String?
+    let action: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title)
+        Button(action: action) {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    Text(title)
+                    Spacer()
+                    Text("\(opens) ›")
+                }
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            Text(value)
-                .font(.title3.bold())
-                .monospacedDigit()
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
-            if let fraction {
-                ProgressView(value: min(max(fraction, 0), 1))
+                Text(value)
+                    .font(.title3.bold())
+                    .monospacedDigit()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                ProgressView(value: min(max(fraction ?? 0, 0), 1))
+                    .tint(tint)
+                Text(detail)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .help(exact ?? "")
             }
-            extra()
-            Text(detail)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .lineLimit(2)
+            .padding(12)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .background(RoundedRectangle(cornerRadius: 10).fill(Color.secondary.opacity(0.08)))
+            .contentShape(Rectangle())
         }
-        .padding(12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: 10).fill(Color.secondary.opacity(0.08)))
+        .buttonStyle(.plain)
+        .help("Open \(opens)")
+    }
+}
+
+/// Opens Activity Monitor on the CPU or Memory tab. It reads the tab to show from its own settings when it
+/// starts, so this only picks the tab if Activity Monitor isn't already open.
+enum ActivityMonitor {
+    enum Tab: Int { case cpu = 0, memory = 1 }
+
+    static func open(_ tab: Tab) {
+        let id = "com.apple.ActivityMonitor"
+        if NSRunningApplication.runningApplications(withBundleIdentifier: id).isEmpty {
+            UserDefaults(suiteName: id)?.set(tab.rawValue, forKey: "SelectedTab")
+        }
+        if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: id) {
+            NSWorkspace.shared.openApplication(at: url, configuration: NSWorkspace.OpenConfiguration())
+        }
     }
 }
 
