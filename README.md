@@ -1,6 +1,6 @@
 # Tidy
 
-Tidy is a native macOS app that keeps a Mac clean, safe and fast. It finds the hidden junk you can't easily find by hand, removes apps together with everything they leave behind, checks for anything suspicious, and shows how busy the Mac is. It's a free, open alternative to apps like CleanMyMac, deliberately kept small.
+Tidy is a native macOS app that keeps a Mac clean, safe and fast. It finds the hidden junk you can't easily find by hand, removes apps together with everything they leave behind, checks for anything suspicious, and shows how busy the Mac is. It's a small, focused alternative to commercial Mac cleaners.
 
 ## What it's about
 
