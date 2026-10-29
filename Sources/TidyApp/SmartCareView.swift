@@ -4,6 +4,7 @@ import TidyCore
 /// One scan across cleanup and protection, with a single report before anything changes.
 struct SmartCareView: View {
     @ObservedObject var model: SmartCareModel
+    let trash: TrashModel
     @ObservedObject var reminders: ReminderModel
     @Binding var selection: Module?
     @State private var reviewing: SmartCareReport?
@@ -48,7 +49,7 @@ struct SmartCareView: View {
                 Image(systemName: "sparkles")
                     .font(.system(size: 64))
                     .foregroundColor(.accentColor)
-                Text("One scan for junk, package caches, login items and browser settings.")
+                Text("One scan for junk, the Trash, login items and browser settings.")
                     .font(.title3)
                 Text("You'll see everything it finds before anything changes.")
                     .foregroundStyle(.secondary)
@@ -129,6 +130,10 @@ struct SmartCareView: View {
                             Button("Choose Items in System Junk") { selection = .systemJunk }
                         }
                     }
+                }
+
+                Card(title: "Trash", symbol: "trash.fill", tint: .orange) {
+                    TrashSummary(model: trash)
                 }
 
                 Card(title: "Protection", symbol: "checkmark.shield.fill",

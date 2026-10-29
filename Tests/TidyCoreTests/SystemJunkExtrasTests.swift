@@ -180,3 +180,55 @@ final class CombinedScannerTests: XCTestCase {
         XCTAssertFalse(scanner.safePaths.permits(applications.appendingPathComponent("Safari.app")))
     }
 }
+
+final class TrashTests: XCTestCase {
+    var home: URL!
+    var trashFolder: URL { home.appendingPathComponent(".Trash") }
+
+    override func setUpWithError() throws { home = try makeTemporaryFolder() }
+    override func tearDownWithError() throws { try? FileManager.default.removeItem(at: home) }
+
+    func testListsWhatIsInTheTrashLargestFirst() throws {
+        try writeBytes(4096, to: trashFolder.appendingPathComponent("notes.txt"))
+        try writeBytes(65_536, to: trashFolder.appendingPathComponent("Old App.app/Contents/MacOS/Old App"))
+        try writeBytes(10, to: trashFolder.appendingPathComponent(".DS_Store"))
+        let items = try XCTUnwrap(Trash(home: home).items())
+        XCTAssertEqual(items.map(\.url.lastPathComponent), ["Old App.app", "notes.txt"])
+        XCTAssertTrue(items.allSatisfy { $0.isSelected && $0.category == "Trash" })
+    }
+
+    func testNoTrashFolderMeansAnEmptyTrash() {
+        XCTAssertEqual(Trash(home: home).items()?.count, 0)
+    }
+
+    func testEmptyingDeletesOnlyWhatIsInTheTrash() throws {
+        try writeBytes(4096, to: trashFolder.appendingPathComponent("notes.txt"))
+        try writeBytes(4096, to: home.appendingPathComponent("Documents/keep.txt"))
+        try FileManager.default.createSymbolicLink(at: trashFolder.appendingPathComponent("link"),
+                                                   withDestinationURL: home.appendingPathComponent("Documents"))
+        let trash = Trash(home: home)
+        let outside = ScanItem(url: home.appendingPathComponent("Documents/keep.txt"), size: 4096, category: "Trash")
+        let sneaky = ScanItem(url: URL(fileURLWithPath: trashFolder.path + "/../Documents/keep.txt"), size: 4096, category: "Trash")
+        let result = try trash.empty(try XCTUnwrap(trash.items()) + [outside, sneaky])
+
+        XCTAssertEqual(Set(result.deleted.map(\.url.lastPathComponent)), ["notes.txt", "link"])
+        XCTAssertEqual(result.skipped.count, 2)
+        XCTAssertEqual(trash.items()?.count, 0)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: home.appendingPathComponent("Documents/keep.txt").path),
+                      "a link in the Trash goes, not what it points to")
+
+        let lines = try String(contentsOf: trash.log, encoding: .utf8).split(separator: "\n")
+        XCTAssertEqual(lines.count, 2)
+        XCTAssertTrue(lines[0].contains("\"action\":\"start\""))
+        XCTAssertTrue(lines[1].contains("\"action\":\"deleted\"") && lines[1].contains("notes.txt"))
+    }
+
+    func testNothingIsDeletedWhenTheLogCantBeWritten() throws {
+        try writeBytes(4096, to: trashFolder.appendingPathComponent("notes.txt"))
+        // A file where the log's folder should be.
+        try writeBytes(1, to: home.appendingPathComponent("Library/Application Support/Tidy"))
+        let trash = Trash(home: home)
+        XCTAssertThrowsError(try trash.empty(try XCTUnwrap(trash.items())))
+        XCTAssertEqual(trash.items()?.count, 1)
+    }
+}

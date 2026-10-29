@@ -60,12 +60,12 @@ final class SystemJunkScannerTests: XCTestCase {
         XCTAssertTrue(items.allSatisfy { $0.category == "Simulator caches" })
     }
 
-    func testArchivesAndTrashAreNotPreselected() async throws {
+    func testArchivesAreNotPreselectedAndTheTrashIsLeftToTrash() async throws {
         try write("Library/Developer/Xcode/Archives/2026-10-01/App.xcarchive/Info.plist")
         try write(".Trash/old.zip")
         let scanner = SystemJunkScanner(locations: SystemJunkScanner.defaultLocations(home: home))
         let items = try await scanner.scan { _ in }
-        XCTAssertEqual(items.count, 2)
+        XCTAssertEqual(items.map(\.category), ["Xcode archives"], "emptying the Trash deletes for good, so it isn't quarantined with junk")
         XCTAssertTrue(items.allSatisfy { !$0.isSelected })
     }
 
