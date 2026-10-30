@@ -201,7 +201,7 @@ cd clean-my-mac
 open Package.swift
 ```
 
-In Xcode, choose the **TidyApp** scheme and **My Mac**, then press ⌘R. Xcode runs whatever branch is checked out.
+In Xcode, choose the **TidyApp** scheme and **My Mac**, then press ⌘R. Xcode runs whatever branch is checked out. Runs from Xcode have no app bundle, so they show in the Dock as a plain program (exec), with Tidy's menus, while the installed Tidy lives in the menu bar only.
 
 ### Test
 

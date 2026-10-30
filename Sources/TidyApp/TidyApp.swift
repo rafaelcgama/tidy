@@ -118,10 +118,12 @@ enum DockIcon {
         UserDefaults.standard.object(forKey: "showMenuBarMonitor") as? Bool ?? true
     }
 
-    /// Out of the Dock while the menu bar monitor is on, in it while it's off. Runs without an app bundle
-    /// (`swift run`, Xcode) need this to show their windows at all.
+    /// Out of the Dock while the menu bar monitor is on, in it while it's off. Runs from Xcode or `swift run`
+    /// have no app bundle and stay in the Dock as a plain program, which is handier while working on Tidy;
+    /// they also need this to show their windows at all.
     static func update() {
-        let policy: NSApplication.ActivationPolicy = menuBarMonitorShown ? .accessory : .regular
+        let inDock = !menuBarMonitorShown || Bundle.main.bundleIdentifier == nil
+        let policy: NSApplication.ActivationPolicy = inDock ? .regular : .accessory
         if NSApp.activationPolicy() != policy {
             NSApp.setActivationPolicy(policy)
         }
