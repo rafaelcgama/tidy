@@ -4,62 +4,89 @@ import TidyCore
 
 /// About Tidy, in the Tidy and Help menus.
 struct AboutTidyButton: View {
+    @Environment(\.openWindow) private var openWindow
+
     var body: some View {
-        Button("About Tidy") { AboutTidy.show() }
+        Button("About Tidy") {
+            openWindow(id: AboutTidyWindow.id)
+            NSApp.activate(ignoringOtherApps: true)
+        }
     }
 }
 
 /// Tidy Help, in the Help menu: Tidy's guide, the README on GitHub.
 struct TidyHelpButton: View {
     var body: some View {
-        Button("Tidy Help") { NSWorkspace.shared.open(AboutTidy.guide) }
+        Button("Tidy Help") { NSWorkspace.shared.open(AboutTidyWindow.guide) }
     }
 }
 
-/// macOS's own About window: Tidy's icon, name, version and build (from Info.plist), what it does,
-/// links to its page and release notes, and the license of YARA, which Malware Scan runs on.
-enum AboutTidy {
+/// The About Tidy window: Tidy's name in large type with no icon, the version and build, what it does,
+/// links to its guide and release notes, the license of YARA, which Malware Scan runs on, and the copyright.
+struct AboutTidyWindow: View {
+    static let id = "about"
     static let guide = URL(string: "https://github.com/\(TidyRelease.repository)#readme")!
     static let releaseNotes = URL(string: "https://github.com/\(TidyRelease.repository)/releases")!
 
-    static func show() {
-        NSApp.activate(ignoringOtherApps: true)
-        var options: [NSApplication.AboutPanelOptionKey: Any] = [.applicationName: "Tidy", .credits: credits]
-        if let version = info("CFBundleShortVersionString") ?? SourceFolder.version {
-            options[.applicationVersion] = version
-            options[.version] = info("CFBundleVersion") ?? "development"
+    var body: some View {
+        VStack(spacing: 6) {
+            Text("Tidy")
+                .font(.system(size: 30, weight: .bold))
+            Text(Self.versionLine)
+                .foregroundStyle(.secondary)
+            Text("Keeps your Mac clean, safe and fast.")
+                .padding(.top, 10)
+            HStack(spacing: 8) {
+                Button("Tidy Help") { NSWorkspace.shared.open(Self.guide) }
+                    .buttonStyle(.link)
+                Text("·")
+                    .foregroundStyle(.secondary)
+                Button("Release Notes") { NSWorkspace.shared.open(Self.releaseNotes) }
+                    .buttonStyle(.link)
+            }
+            ScrollView {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Acknowledgements")
+                        .bold()
+                    Group {
+                        Text("Malware Scan runs on YARA 4.5.4 by The YARA Authors, under this license:")
+                        Text(Self.yaraLicense)
+                        Text("YARA's .NET module is under the Apache License 2.0, a copy of which comes with Tidy in Tidy.app/Contents/Resources.")
+                    }
+                    .foregroundStyle(.secondary)
+                }
+                .font(.subheadline)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(10)
+            }
+            .frame(height: 140)
+            .background(RoundedRectangle(cornerRadius: 6).fill(Color.secondary.opacity(0.08)))
+            .padding(.top, 12)
+            if let copyright = Self.copyright {
+                Text(copyright)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .padding(.top, 8)
+            }
         }
-        NSApp.orderFrontStandardAboutPanel(options: options)
+        .padding(.horizontal, 24)
+        .padding(.top, 8)
+        .padding(.bottom, 20)
+        .frame(width: 360)
+    }
+
+    /// "Version 1.1.3 (202610300204)", from Info.plist; run from Xcode, "Version 1.1.3 (development)".
+    static var versionLine: String {
+        guard let version = info("CFBundleShortVersionString") ?? SourceFolder.version else { return "Development version" }
+        return "Version \(version) (\(info("CFBundleVersion") ?? "development"))"
+    }
+
+    static var copyright: String? {
+        info("NSHumanReadableCopyright") ?? SourceFolder.info("NSHumanReadableCopyright")
     }
 
     private static func info(_ key: String) -> String? {
         Bundle.main.object(forInfoDictionaryKey: key) as? String
-    }
-
-    static var credits: NSAttributedString {
-        let text = NSMutableAttributedString(string: "")
-        func add(_ string: String, bold: Bool = false, secondary: Bool = false, link: URL? = nil, centered: Bool = true) {
-            let paragraph = NSMutableParagraphStyle()
-            paragraph.alignment = centered ? .center : .natural
-            let size = NSFont.smallSystemFontSize
-            var attributes: [NSAttributedString.Key: Any] = [
-                .font: bold ? NSFont.boldSystemFont(ofSize: size) : NSFont.systemFont(ofSize: size),
-                .foregroundColor: secondary ? NSColor.secondaryLabelColor : NSColor.labelColor,
-                .paragraphStyle: paragraph,
-            ]
-            if let link { attributes[.link] = link }
-            text.append(NSAttributedString(string: string, attributes: attributes))
-        }
-        add("Keeps your Mac clean, safe and fast.\n\n")
-        add("Tidy Help", link: guide)
-        add("   ·   ")
-        add("Release Notes", link: releaseNotes)
-        add("\n\nAcknowledgements\n", bold: true)
-        add("Malware Scan runs on YARA 4.5.4 by The YARA Authors, under this license:\n\n", secondary: true)
-        add(yaraLicense, secondary: true, centered: false)
-        add("\n\nYARA's .NET module is under the Apache License 2.0, a copy of which comes with Tidy in Tidy.app/Contents/Resources.",
-            secondary: true, centered: false)
-        return text
     }
 
     /// libyara's BSD 3-Clause License, as in Sources/CYara/NOTICE.md.
@@ -78,9 +105,9 @@ enum AboutTidy {
         """
 }
 
-/// Run from Xcode, Tidy isn't an app bundle yet, so macOS knows no icon or version for it: it shows a
-/// folder and "TidyApp". Debug builds take both from the project folder instead, the icon and VERSION
-/// the .dmg gets. The app itself, built with make-app.sh, has them in Info.plist.
+/// Run from Xcode, Tidy isn't an app bundle yet, so macOS knows no version or copyright for it. Debug
+/// builds take them from the project folder instead, from the VERSION and Info.plist the .dmg gets. The
+/// app itself, built with make-app.sh, has them in its Info.plist.
 enum SourceFolder {
     #if DEBUG
     static let root: URL? = URL(fileURLWithPath: #filePath)
@@ -89,15 +116,16 @@ enum SourceFolder {
     static let root: URL? = nil
     #endif
 
-    /// Whether Tidy runs from Tidy.app rather than straight from the build folder.
-    static var isAppBundle: Bool { Bundle.main.bundleURL.pathExtension == "app" }
-
-    static var icon: NSImage? {
-        root.flatMap { NSImage(contentsOf: $0.appendingPathComponent("Resources/AppIcon.iconset/icon_512x512@2x.png")) }
-    }
-
     static var version: String? {
         root.flatMap { try? String(contentsOf: $0.appendingPathComponent("VERSION"), encoding: .utf8) }?
             .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    /// A value from Resources/Info.plist, the template make-app.sh fills in.
+    static func info(_ key: String) -> String? {
+        guard let root, let data = try? Data(contentsOf: root.appendingPathComponent("Resources/Info.plist")),
+              let plist = (try? PropertyListSerialization.propertyList(from: data, format: nil)) as? [String: Any]
+        else { return nil }
+        return plist[key] as? String
     }
 }

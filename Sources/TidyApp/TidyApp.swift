@@ -46,6 +46,14 @@ struct TidyApp: App {
             TidyUpdateWindow(model: TidyUpdateModel.shared)
         }
         .windowResizability(.contentSize)
+        // Opened only from About Tidy in the Tidy and Help menus, not listed in the Window menu.
+        Window("About Tidy", id: AboutTidyWindow.id) {
+            AboutTidyWindow()
+        }
+        .windowStyle(.hiddenTitleBar)
+        .windowResizability(.contentSize)
+        .defaultPosition(.center)
+        .commandsRemoved()
         Settings {
             SettingsView(reminders: reminders)
         }
@@ -60,12 +68,8 @@ struct TidyApp: App {
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // Lets `swift run TidyApp` show a normal window and Dock icon before there is an app bundle,
-        // with Tidy's icon in the Dock, About Tidy and Software Update rather than a folder.
+        // Lets `swift run TidyApp` show a normal window and Dock icon before there is an app bundle.
         NSApp.setActivationPolicy(.regular)
-        if !SourceFolder.isAppBundle, let icon = SourceFolder.icon {
-            NSApp.applicationIconImage = icon
-        }
         NSApp.activate(ignoringOtherApps: true)
         // Batches past their retention period are deleted for good: the app's own here, the
         // admin helper's when it's contacted.

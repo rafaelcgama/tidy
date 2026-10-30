@@ -256,7 +256,7 @@ Included in the app at `Tidy.app/Contents/Helpers/tidy`, or run it with `swift r
 | Part | What's used |
 | --- | --- |
 | Language | Swift 5.10 or later |
-| Interface | SwiftUI, with AppKit where SwiftUI falls short (menu bar, About window, opening apps and Finder) |
+| Interface | SwiftUI, with AppKit where SwiftUI falls short (menu bar, opening apps and Finder) |
 | Build | Swift Package Manager (`Package.swift`) and Xcode |
 | Malware engine | [libyara](https://github.com/VirusTotal/yara) 4.5.4 (C), included as source, running Apple's XProtect rules |
 | System frameworks | ServiceManagement (open at login, the admin helper, System Settings links), XPC (talking to the admin helper), Security (code signatures), CoreServices (when apps were last opened), CryptoKit (SHA-256), Combine |
