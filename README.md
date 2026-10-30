@@ -175,7 +175,7 @@ For each finding you can **Reveal in Finder** or **Move to Quarantine…** (it t
 Below that are two lists of who can watch you, each with an **Open** button:
 
 - **Apps that can watch you or control your Mac:** opens the System Settings pages for Camera, Microphone, Screen Recording, Input Monitoring and Accessibility, where you see which apps have access and can turn it off
-- **Websites that can watch you:** opens the page in each installed browser (Chrome, Firefox, Edge, Brave) that lists websites allowed to use your camera, microphone, location, notifications and more. Safari doesn't let other apps open that page, so Tidy opens Safari and tells you where to look (Settings › Websites).
+- **Websites that can watch you:** opens the page in each installed browser (Chrome, Firefox, Edge, Brave) that lists websites allowed to use your camera, microphone, location, notifications and more.
 
 ### 6. Malware Scan
 

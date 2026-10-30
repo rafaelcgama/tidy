@@ -65,24 +65,25 @@ struct ProtectionView: View {
                         SectionTitle(title: "Apps that can watch you or control your Mac",
                                      detail: "Listed in System Settings. Turn off any you don't recognize.")
                     }
-                    Section {
-                        ForEach(browsers) { browser in
-                            OpenRow(title: browser.name, detail: browser.hint,
-                                    button: browser.page == nil ? "Open \(browser.name)" : "Open") {
-                                Image(nsImage: NSWorkspace.shared.icon(forFile: browser.app.path))
-                                    .resizable()
-                                    .frame(width: 26, height: 26)
-                            } action: {
-                                model.open(browser)
+                    if !browsers.isEmpty {
+                        Section {
+                            ForEach(browsers) { browser in
+                                OpenRow(title: browser.name, detail: browser.hint, button: "Open") {
+                                    Image(nsImage: NSWorkspace.shared.icon(forFile: browser.app.path))
+                                        .resizable()
+                                        .frame(width: 26, height: 26)
+                                } action: {
+                                    model.open(browser)
+                                }
                             }
+                        } header: {
+                            SectionTitle(title: "Websites that can watch you",
+                                         detail: "Listed in each browser. Remove any site you don't recognize.")
+                        } footer: {
+                            Text("Lists Chrome, Firefox, Edge and Brave when they're on your Mac.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
                         }
-                    } header: {
-                        SectionTitle(title: "Websites that can watch you",
-                                     detail: "Listed in each browser. Remove any site you don't recognize.")
-                    } footer: {
-                        Text("Only browsers on your Mac are listed.")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
                     }
                 }
             }
