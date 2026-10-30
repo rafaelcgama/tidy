@@ -175,18 +175,18 @@ For each finding you can **Reveal in Finder** or **Move to Quarantine…** (it t
 Below that are two lists of who can watch you, each with an **Open** button:
 
 - **Apps that can watch you or control your Mac:** opens the System Settings pages for Camera, Microphone, Screen Recording, Input Monitoring and Accessibility, where you see which apps have access and can turn it off
-- **Websites that can watch you:** opens the page in each installed browser (Chrome, Firefox, Edge, Brave) that lists websites allowed to use your camera, microphone, location, notifications and more. Safari doesn't let other apps open that page, so Tidy opens Safari and tells you where to look (Settings › Websites).
+- **Websites that can watch you:** opens the page in each installed browser (Chrome, Firefox, Edge, Brave) that lists websites allowed to use your camera, microphone, location, notifications and more.
 
 ### 6. Malware Scan
 
-Checks files for known malware, using Apple's own XProtect rules (read from your Mac) and the YARA engine.
+Checks your files against Apple's own malware list: the XProtect rules macOS uses, which Apple keeps up to date. Tidy reads them from your Mac and runs them with the YARA engine. The screen only mentions them when something's wrong, such as the list not being readable on your Mac.
 
 - **Quick Scan:** checks Downloads, your apps, what starts at login or boot, and the shared and temporary folders.
 - **Scan Folders or Files…:** checks only what you choose.
 
 Anything found is listed with its location and what it matched. Select it and click **Move to Quarantine…**. It can't run from there, and you can put it back if it was a mistake.
 
-Advanced: you can add your own YARA rules (`.yar`, `.yara`) and lists of known-bad SHA-256 hashes (`.txt`, `.csv`, `.tsv`, `.sha256`) with **Open Signatures Folder**. To test the scan safely, use the standard EICAR test file, which Tidy recognizes. Files over 128 MB and files stored only in iCloud aren't read.
+Advanced: you can add your own YARA rules (`.yar`, `.yara`) and lists of known-bad SHA-256 hashes (`.txt`, `.csv`, `.tsv`, `.sha256`) by putting them in `~/Library/Application Support/Tidy/Signatures`. A file that can't be used is named on the Malware Scan screen. To test the scan safely, use the standard EICAR test file, which Tidy recognizes. Files over 128 MB and files stored only in iCloud aren't read.
 
 ### 7. Performance
 
@@ -214,12 +214,12 @@ After 30 days, entries are deleted automatically the next time Tidy starts.
 
 ## Menu bar
 
-Tidy shows CPU and memory use in the menu bar. Click it to see free disk space, network activity and any due reminder, plus **Open Tidy** and **Quit Tidy**. While the menu bar monitor is on, closing Tidy's window keeps it running there.
+Tidy shows CPU and RAM use in the menu bar. Click it to see CPU, RAM and Hard Drive, each with a bar like on the Performance screen, any due reminder or new version of Tidy, plus **Open Tidy** and **Quit Tidy**. While the menu bar monitor is on, closing Tidy's window keeps it running there.
 
 ## Settings (⌘,)
 
 - **Reminders:** remind you when your last Smart Care scan or malware Quick Scan is older than a week, two weeks, a month or three months. Reminders appear only in Smart Care and in the menu bar panel, never as notifications.
-- **General:** show CPU and memory in the menu bar, open Tidy at login.
+- **General:** show CPU and RAM in the menu bar, open Tidy at login.
 - **Admin Helper:** optional. Without it, macOS asks for your password each time Tidy needs administrator rights. With it, a small helper does that work without asking. It only works in a build signed with an Apple Developer ID, so with the normal build you'll be asked for your password instead.
 
 ## Where Tidy keeps things
@@ -271,7 +271,7 @@ Built with the app and included in it at `Tidy.app/Contents/Helpers/tidy`, or ru
 - `Sources/tidy`: the command-line tool
 - `Sources/CYara`: libyara 4.5.4 and its licenses (`NOTICE.md`)
 - `Tests/TidyCoreTests`: the tests
-- `Resources`: icon, `Info.plist`, entitlements, the helper's launchd file
+- `Resources`: icon, `Info.plist`, the helper's launchd file
 - `scripts`: `make-app.sh` (app and .dmg), `check.sh` (build and test), `make-icon.py` (icon)
 - `VERSION`: Tidy's version number, used by `make-app.sh`
 - `.github/workflows/build.yml`: tests and builds every push, and publishes each change to `main` as a release

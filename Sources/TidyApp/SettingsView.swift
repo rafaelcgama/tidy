@@ -115,7 +115,7 @@ private struct GeneralSettings: View {
 
     var body: some View {
         Form {
-            Toggle("Show CPU and memory in the menu bar", isOn: $showMenuBarMonitor)
+            Toggle("Show CPU and RAM in the menu bar", isOn: $showMenuBarMonitor)
             Toggle("Open Tidy at login", isOn: Binding(get: { opensAtLogin }, set: { setOpensAtLogin($0) }))
             if let loginError {
                 Text(loginError)

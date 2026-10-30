@@ -26,8 +26,6 @@
 	<string>public.app-category.utilities</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>13.0</string>
-	<key>NSAppleEventsUsageDescription</key>
-	<string>Tidy asks System Events for the apps that open at login, so you can switch them off and on.</string>
 	<key>NSHighResolutionCapable</key>
 	<true/>
 	<key>NSPrincipalClass</key>
