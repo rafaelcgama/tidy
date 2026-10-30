@@ -167,7 +167,7 @@ Entries older than 30 days are deleted for good the next time Tidy starts.
 
 ### Menu bar
 
-Tidy shows CPU and RAM use in the menu bar. Click it to see CPU, RAM and Hard Drive with a bar each, any reminder that's due, a new version of Tidy when there is one, and **Open Tidy** and **Quit Tidy**. While the menu bar monitor is on, closing Tidy's window keeps Tidy running there, out of the Dock, like other menu bar apps. **Open Tidy** brings the window and the Dock icon back.
+Tidy shows CPU and RAM use in the menu bar. Click it to see CPU, RAM and Hard Drive with a bar each, any reminder that's due, a new version of Tidy when there is one, and **Open Tidy** and **Quit Tidy**. While the menu bar monitor is on, closing Tidy's window keeps Tidy running there, out of the Dock, like other menu bar apps, and when Tidy opens at login it starts there, with no window. **Open Tidy** brings the window and the Dock icon back.
 
 ### Settings (⌘,)
 

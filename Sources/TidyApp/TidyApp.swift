@@ -67,14 +67,23 @@ struct TidyApp: App {
     }
 }
 
+@MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var windowChanges: [AnyCancellable] = []
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // Lets `swift run TidyApp` show a normal window and Dock icon before there is an app bundle.
-        NSApp.setActivationPolicy(.regular)
-        NSApp.activate(ignoringOtherApps: true)
         windowChanges = DockIcon.follow()
+        if DockIcon.menuBarMonitorShown && Self.openedAtLogin {
+            // Opened at login: menu bar only. SwiftUI opens the main window as Tidy starts, by now or just
+            // after this returns, so it's closed both times.
+            NSApp.setActivationPolicy(.accessory)
+            DockIcon.closeWindows()
+            DispatchQueue.main.async { DockIcon.closeWindows() }
+        } else {
+            // Lets `swift run TidyApp` show a normal window and Dock icon before there is an app bundle.
+            NSApp.setActivationPolicy(.regular)
+            NSApp.activate(ignoringOtherApps: true)
+        }
         // Batches past their retention period are deleted for good: the app's own here, the
         // admin helper's when it's contacted.
         _ = try? QuarantineStore(root: QuarantineStore.defaultRoot).purgeExpired()
@@ -88,6 +97,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// With the menu bar monitor on, closing the window keeps Tidy running in the menu bar.
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         !DockIcon.menuBarMonitorShown
+    }
+
+    /// Whether macOS opened Tidy as a login item (Open Tidy at login in Settings), rather than you opening it.
+    /// Only known while Tidy starts.
+    private static var openedAtLogin: Bool {
+        let event = NSAppleEventManager.shared().currentAppleEvent
+        return event?.eventID == AEEventID(kAEOpenApplication)
+            && event?.paramDescriptor(forKeyword: AEKeyword(keyAEPropData))?.enumCodeValue == OSType(keyAELaunchedAsLogInItem)
     }
 }
 
@@ -105,7 +122,8 @@ enum DockIcon {
         return [
             center.publisher(for: NSWindow.didBecomeKeyNotification).sink { note in
                 guard let window = note.object as? NSWindow else { return }
-                Task { @MainActor in if counts(window) { show() } }
+                // Unless it was closed meanwhile, as when Tidy starts at login.
+                Task { @MainActor in if window.isVisible && counts(window) { show() } }
             },
             // The task runs once the window is gone; while it closes, it still counts as open.
             center.publisher(for: NSWindow.willCloseNotification).sink { note in
@@ -119,6 +137,11 @@ enum DockIcon {
         guard NSApp.activationPolicy() != .regular else { return }
         NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
+    }
+
+    /// Closes Tidy's windows, which leaves it in the menu bar only.
+    static func closeWindows() {
+        NSApp.windows.filter(counts).forEach { $0.close() }
     }
 
     private static func hideIfNoWindows() {
