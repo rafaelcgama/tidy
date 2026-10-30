@@ -278,4 +278,4 @@ Built with the app and included in it at `Tidy.app/Contents/Helpers/tidy`, or ru
 
 ### Branches
 
-`main` holds released versions (tag `v1.0`). Each change is made on its own `dev/…` branch, pushed to GitHub, and merged into `main` through a pull request. Every push is tested and built on GitHub (the disk image is attached to the run under Actions), and every merge into `main` becomes a new release. To give a release a new version number, change `VERSION` in the pull request.
+`main` holds released versions (tag `v1.0`). Each change is made on its own `dev/…` branch, pushed to GitHub, and merged into `main` through a pull request. Every push is tested and built on GitHub (the disk image is attached to the run under Actions), and every merge into `main` becomes a new release. The pull request's title and description become the release notes that Check for Updates… shows. To give a release a new version number, change `VERSION` in the pull request; two releases with the same number are told apart by their build numbers.

@@ -47,7 +47,8 @@ public struct TidyRelease: Equatable, Sendable {
         let title = reply.name ?? ""
         let version = title.hasPrefix("Tidy ") ? String(title.dropFirst("Tidy ".count)) : title
         return TidyRelease(version: version.isEmpty ? String(build) : version, build: build,
-                           notes: reply.body ?? "", downloadURL: image.browser_download_url, pageURL: reply.html_url)
+                           notes: (reply.body ?? "").trimmingCharacters(in: .whitespacesAndNewlines),
+                           downloadURL: image.browser_download_url, pageURL: reply.html_url)
     }
 
     /// Whether this release is newer than the installed build. A copy run from Xcode has no build
@@ -55,6 +56,15 @@ public struct TidyRelease: Equatable, Sendable {
     public func isNewer(thanBuild installed: Int?) -> Bool {
         guard let installed else { return false }
         return build > installed
+    }
+
+    /// The two versions as the update window names them. Two builds of the same version also show
+    /// their build numbers, as other Mac apps do, so they don't read as one and the same.
+    public func versionNames(installedVersion: String?, installedBuild: Int?) -> (available: String, installed: String?) {
+        guard let installedVersion, installedVersion == version, let installedBuild else {
+            return (version, installedVersion)
+        }
+        return ("\(version) (\(build))", "\(installedVersion) (\(installedBuild))")
     }
 
     /// The latest release, or nil when there is none yet. Throws when GitHub can't be reached.

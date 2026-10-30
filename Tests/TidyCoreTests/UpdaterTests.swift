@@ -111,7 +111,7 @@ final class UpdaterTests: XCTestCase {
     // Not named `release`: XCTestCase is an NSObject, and a property by that name replaces
     // Objective-C's -release, which crashed the whole test run.
     let releaseJSON = Data("""
-    {"tag_name": "build-202610291200", "name": "Tidy 1.1.0", "body": "Simpler Performance tab",
+    {"tag_name": "build-202610291200", "name": "Tidy 1.1.0", "body": "Simpler Performance tab\\n\\n",
      "html_url": "https://github.com/rafaelcgama/clean-my-mac/releases/tag/build-202610291200",
      "assets": [{"name": "notes.txt", "browser_download_url": "https://example.invalid/notes.txt"},
                 {"name": "Tidy.dmg", "browser_download_url": "https://example.invalid/Tidy.dmg"}]}
@@ -127,6 +127,17 @@ final class UpdaterTests: XCTestCase {
         XCTAssertFalse(latest.isNewer(thanBuild: 202610291200))
         XCTAssertFalse(latest.isNewer(thanBuild: 202610300900), "a build made later on this Mac is already newer")
         XCTAssertFalse(latest.isNewer(thanBuild: nil), "a copy run from Xcode isn't offered updates")
+    }
+
+    func testTwoBuildsOfOneVersionShowTheirBuildNumbers() throws {
+        let latest = try XCTUnwrap(TidyRelease.parse(releaseJSON))
+        let sameVersion = latest.versionNames(installedVersion: "1.1.0", installedBuild: 202610280900)
+        XCTAssertEqual(sameVersion.available, "1.1.0 (202610291200)")
+        XCTAssertEqual(sameVersion.installed, "1.1.0 (202610280900)")
+        let olderVersion = latest.versionNames(installedVersion: "1.0", installedBuild: 202610280900)
+        XCTAssertEqual(olderVersion.available, "1.1.0")
+        XCTAssertEqual(olderVersion.installed, "1.0")
+        XCTAssertNil(latest.versionNames(installedVersion: nil, installedBuild: nil).installed)
     }
 
     func testIgnoresReleasesThatArentTidyBuilds() {
