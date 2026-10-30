@@ -12,7 +12,7 @@ Tidy follows a few rules everywhere:
 
 - **You see everything first.** Nothing is removed until you've seen the exact list of items and their sizes.
 - **Everything can be undone.** Removed items go to Tidy's Quarantine for 30 days, where you can put them back. Only after 30 days, or when you choose to delete them from Quarantine, are they gone for good.
-- **You decide when.** Tidy never scans, cleans or updates anything on its own, and it never shows notifications or popups. At most it reminds you, inside the app, that a scan is due.
+- **You decide when.** Tidy never scans, cleans or updates anything on its own, and it never shows notifications or popups. At most it tells you, inside the app, that a scan is due or that a new Tidy is available.
 - **No special access.** Tidy doesn't need Full Disk Access and never asks for it. When a task needs administrator rights (for example, system caches), macOS asks for your password.
 - **It never touches** `/System`, SIP-protected files, Keychains, Mail data or the Photos library, and it only looks in a fixed list of known junk locations.
 
@@ -29,6 +29,7 @@ Tidy follows a few rules everywhere:
 | macOS tools it calls | `launchctl` (stop and restart background jobs it quarantines), `pkgutil` (what an installer package put on the Mac), `brew` (Homebrew updates), `osascript` (the administrator password prompt), `open` |
 | Tests | XCTest (`Tests/TidyCoreTests`) |
 | Packaging | `codesign`, `hdiutil` (the .dmg), optionally `notarytool` |
+| Releases | GitHub Actions: every push is tested and built; every change to `main` is published as a GitHub release with Tidy.dmg, which the app updates itself from |
 
 There are no third-party dependencies besides libyara.
 
@@ -91,17 +92,12 @@ To make a build that opens anywhere without that step, you need an Apple Develop
 
 ### Updating
 
-1. Quit Tidy with ⌘Q. If it's still in the menu bar, click it there and choose **Quit Tidy**.
-2. In the project folder, run:
+Once Tidy is installed, it updates itself like any other app:
 
-   ```sh
-   git pull
-   scripts/make-app.sh
-   ```
+1. Choose **Tidy › Check for Updates…** (also in the **Help** menu). Tidy also checks by itself when it starts, and Smart Care and the menu bar panel say when a new version is available.
+2. The Software Update window shows the new version and its release notes. Click **Install Update**. Tidy downloads it, checks it, replaces itself and opens again. **Remind Me Later** closes the window.
 
-3. Drag Tidy onto Applications and choose **Replace**.
-
-Your settings and Quarantine are kept, because they're stored outside the app.
+New versions come from this repository's [releases](https://github.com/rafaelcgama/clean-my-mac/releases): every change merged into `main` is built and published there automatically. Your settings and Quarantine are kept, because they're stored outside the app.
 
 ### Uninstalling
 
@@ -155,11 +151,12 @@ The list includes iPhone and iPad apps installed on the Mac, and it updates by i
 
 ### 4. Updater
 
-Click **Check for Updates** to find newer versions of your apps:
+Click **Check for Updates** to find newer versions of your apps (Tidy itself updates from Check for Updates…, see Updating above):
 
 - **Apps that update themselves (Sparkle):** Tidy checks each app's own update feed. **Release Notes** shows what's new. **Open App to Update** opens the app so its own updater installs the update. Beta versions, and versions that need a newer macOS, are skipped.
-- **Homebrew apps (casks):** **Update** updates them right from Tidy.
-- **App Store apps:** **Open App Store Updates** takes you to the App Store.
+- **Homebrew apps (casks):** **Update** updates them right from Tidy, including apps that are marked as updating themselves. If Homebrew can't update one, Tidy shows Homebrew's reason.
+
+The list checks again by itself after each update, and when you come back to Tidy after updating an app in its own window. App Store apps aren't listed: the App Store updates them.
 
 Nothing is installed unless you click.
 
@@ -276,7 +273,9 @@ Built with the app and included in it at `Tidy.app/Contents/Helpers/tidy`, or ru
 - `Tests/TidyCoreTests`: the tests
 - `Resources`: icon, `Info.plist`, entitlements, the helper's launchd file
 - `scripts`: `make-app.sh` (app and .dmg), `check.sh` (build and test), `make-icon.py` (icon)
+- `VERSION`: Tidy's version number, used by `make-app.sh`
+- `.github/workflows/build.yml`: tests and builds every push, and publishes each change to `main` as a release
 
 ### Branches
 
-`main` holds released versions (tag `v1.0`). Each change is made on its own `dev/…` branch and merged into `main` once it works.
+`main` holds released versions (tag `v1.0`). Each change is made on its own `dev/…` branch, pushed to GitHub, and merged into `main` through a pull request. Every push is tested and built on GitHub (the disk image is attached to the run under Actions), and every merge into `main` becomes a new release. To give a release a new version number, change `VERSION` in the pull request.

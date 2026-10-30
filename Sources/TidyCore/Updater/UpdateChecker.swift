@@ -90,7 +90,11 @@ public enum Homebrew {
 
     public struct Failure: Error, LocalizedError {
         public let status: Int32
-        public var errorDescription: String? { "Homebrew stopped with exit code \(status). Try the same command in Terminal to see why." }
+        /// The end of what brew printed as errors, if anything.
+        public var detail: String = ""
+        public var errorDescription: String? {
+            detail.isEmpty ? "Homebrew stopped with exit code \(status). Try the same command in Terminal to see why." : detail
+        }
     }
 
     /// Runs brew with arguments and returns its standard output.
@@ -104,16 +108,28 @@ public enum Homebrew {
         environment["HOMEBREW_NO_AUTO_UPDATE"] = "1"
         process.environment = environment
         let output = Pipe()
+        let errors = Pipe()
         process.standardOutput = output
-        process.standardError = FileHandle.nullDevice
+        process.standardError = errors
         try process.run()
         return try await withCheckedThrowingContinuation { continuation in
-            // Read until brew closes its output, so a large reply can't fill the pipe and stall it.
+            // Read both until brew closes them, so a large reply can't fill a pipe and stall it.
             DispatchQueue.global().async {
+                let errorData = ErrorOutput()
+                let group = DispatchGroup()
+                group.enter()
+                DispatchQueue.global().async {
+                    errorData.data = errors.fileHandleForReading.readDataToEndOfFile()
+                    group.leave()
+                }
                 let data = output.fileHandleForReading.readDataToEndOfFile()
+                group.wait()
                 process.waitUntilExit()
                 if requireSuccess, process.terminationStatus != 0 {
-                    continuation.resume(throwing: Failure(status: process.terminationStatus))
+                    let lines = String(decoding: errorData.data, as: UTF8.self)
+                        .split(separator: "\n").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
+                    continuation.resume(throwing: Failure(status: process.terminationStatus,
+                                                          detail: lines.suffix(3).joined(separator: "\n")))
                 } else {
                     continuation.resume(returning: data)
                 }
@@ -121,7 +137,25 @@ public enum Homebrew {
         }
     }
 
+    /// What brew printed as errors; written by one reader, read after it's done.
+    private final class ErrorOutput: @unchecked Sendable {
+        var data = Data()
+    }
+
+    /// The listing is greedy: it includes casks marked as updating themselves, such as gcloud-cli,
+    /// whose own updater often never runs.
     public static func outdatedCasks() async throws -> [OutdatedCask] {
-        OutdatedCask.parse(try await run(["outdated", "--cask", "--greedy", "--json=v2"], requireSuccess: false))
+        OutdatedCask.parse(try await run(outdatedArguments, requireSuccess: false))
+    }
+
+    /// Updates one cask. Greedy like the listing, or brew would skip the self-updating casks it shows.
+    public static func upgrade(_ token: String) async throws {
+        _ = try await run(upgradeArguments(token))
+    }
+
+    static let outdatedArguments = ["outdated", "--cask", "--greedy", "--json=v2"]
+
+    static func upgradeArguments(_ token: String) -> [String] {
+        ["upgrade", "--cask", "--greedy", token]
     }
 }

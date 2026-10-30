@@ -105,4 +105,57 @@ final class UpdaterTests: XCTestCase {
         XCTAssertEqual(casks[1].currentVersion, "1.94.2")
         XCTAssertTrue(OutdatedCask.parse(Data("oops".utf8)).isEmpty)
     }
+
+    // MARK: - Tidy's own releases
+
+    // Not named `release`: XCTestCase is an NSObject, and a property by that name replaces
+    // Objective-C's -release, which crashed the whole test run.
+    let releaseJSON = Data("""
+    {"tag_name": "build-202610291200", "name": "Tidy 1.1.0", "body": "Simpler Performance tab",
+     "html_url": "https://github.com/rafaelcgama/clean-my-mac/releases/tag/build-202610291200",
+     "assets": [{"name": "notes.txt", "browser_download_url": "https://example.invalid/notes.txt"},
+                {"name": "Tidy.dmg", "browser_download_url": "https://example.invalid/Tidy.dmg"}]}
+    """.utf8)
+
+    func testReadsTidysLatestRelease() throws {
+        let latest = try XCTUnwrap(TidyRelease.parse(releaseJSON))
+        XCTAssertEqual(latest.version, "1.1.0")
+        XCTAssertEqual(latest.build, 202610291200)
+        XCTAssertEqual(latest.notes, "Simpler Performance tab")
+        XCTAssertEqual(latest.downloadURL.absoluteString, "https://example.invalid/Tidy.dmg")
+        XCTAssertTrue(latest.isNewer(thanBuild: 202610290500))
+        XCTAssertFalse(latest.isNewer(thanBuild: 202610291200))
+        XCTAssertFalse(latest.isNewer(thanBuild: 202610300900), "a build made later on this Mac is already newer")
+        XCTAssertFalse(latest.isNewer(thanBuild: nil), "a copy run from Xcode isn't offered updates")
+    }
+
+    func testIgnoresReleasesThatArentTidyBuilds() {
+        let otherTag = Data(String(decoding: releaseJSON, as: UTF8.self).replacingOccurrences(of: "build-202610291200\"", with: "v2\"").utf8)
+        XCTAssertNil(TidyRelease.parse(otherTag))
+        let noImage = Data(String(decoding: releaseJSON, as: UTF8.self).replacingOccurrences(of: "\"Tidy.dmg\"", with: "\"Tidy.zip\"").utf8)
+        XCTAssertNil(TidyRelease.parse(noImage))
+        XCTAssertNil(TidyRelease.parse(Data("not json".utf8)))
+    }
+
+    func testNoReleaseYetIsNotAnError() async throws {
+        let none = try await TidyRelease.latest { _ in (Data(#"{"message": "Not Found"}"#.utf8), 404) }
+        XCTAssertNil(none)
+        let found = try await TidyRelease.latest { [releaseJSON] url in
+            XCTAssertEqual(url, TidyRelease.latestURL)
+            return (releaseJSON, 200)
+        }
+        XCTAssertEqual(found?.build, 202610291200)
+        do {
+            _ = try await TidyRelease.latest { _ in (Data(), 403) }
+            XCTFail("a refused check should throw")
+        } catch {
+            XCTAssertTrue(error is TidyRelease.CheckFailed)
+        }
+    }
+
+    func testCaskUpdatesAreAsGreedyAsTheListing() {
+        // Without --greedy, brew skips casks that say they update themselves (gcloud-cli), so Update did nothing.
+        XCTAssertTrue(Homebrew.outdatedArguments.contains("--greedy"))
+        XCTAssertEqual(Homebrew.upgradeArguments("gcloud-cli"), ["upgrade", "--cask", "--greedy", "gcloud-cli"])
+    }
 }
