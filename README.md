@@ -214,12 +214,12 @@ After 30 days, entries are deleted automatically the next time Tidy starts.
 
 ## Menu bar
 
-Tidy shows CPU and memory use in the menu bar. Click it to see free disk space, network activity and any due reminder, plus **Open Tidy** and **Quit Tidy**. While the menu bar monitor is on, closing Tidy's window keeps it running there.
+Tidy shows CPU and RAM use in the menu bar. Click it to see CPU, RAM and Hard Drive, each with a bar like on the Performance screen, any due reminder or new version of Tidy, plus **Open Tidy** and **Quit Tidy**. While the menu bar monitor is on, closing Tidy's window keeps it running there.
 
 ## Settings (⌘,)
 
 - **Reminders:** remind you when your last Smart Care scan or malware Quick Scan is older than a week, two weeks, a month or three months. Reminders appear only in Smart Care and in the menu bar panel, never as notifications.
-- **General:** show CPU and memory in the menu bar, open Tidy at login.
+- **General:** show CPU and RAM in the menu bar, open Tidy at login.
 - **Admin Helper:** optional. Without it, macOS asks for your password each time Tidy needs administrator rights. With it, a small helper does that work without asking. It only works in a build signed with an Apple Developer ID, so with the normal build you'll be asked for your password instead.
 
 ## Where Tidy keeps things

@@ -7,7 +7,7 @@ struct MenuBarLabel: View {
     @ObservedObject var monitor: SystemMonitor
 
     var body: some View {
-        Text("CPU \(StatFormat.percent(monitor.cpu))  MEM \(StatFormat.percent(monitor.memory?.usedFraction ?? 0))")
+        Text("CPU \(StatFormat.percent(monitor.cpu))  RAM \(StatFormat.percent(monitor.memory?.usedFraction ?? 0))")
             .monospacedDigit()
     }
 }
@@ -46,19 +46,18 @@ struct MenuBarMonitorView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(RoundedRectangle(cornerRadius: 6).fill(Color.accentColor.opacity(0.12)))
             }
-            row("CPU", StatFormat.percent(monitor.cpu))
-            Sparkline(values: monitor.cpuHistory)
-                .frame(height: 30)
+            // The same three as the Performance screen, each a number and a bar.
+            row("CPU", "\(StatFormat.percent(monitor.cpu)) used")
+            ProgressView(value: min(max(monitor.cpu, 0), 1))
             if let memory = monitor.memory {
-                row("Memory", "\(StatFormat.memory(memory.used)) of \(StatFormat.memory(memory.total))")
+                row("RAM", "\(StatFormat.memory(memory.used)) used of \(StatFormat.memory(memory.total))")
                 ProgressView(value: memory.usedFraction)
-                    .tint(memory.pressure == .normal ? Color.accentColor : Color.orange)
+                    .tint(tint(for: memory))
             }
             if let disk = monitor.disk {
-                row("Startup Disk", "\(ByteFormat.string(disk.available)) free")
+                row("Hard Drive", "\(ByteFormat.string(disk.available)) free of \(ByteFormat.string(disk.total))")
                 ProgressView(value: disk.usedFraction)
             }
-            row("Network", "↓ \(StatFormat.rate(monitor.network.receivedPerSecond))  ↑ \(StatFormat.rate(monitor.network.sentPerSecond))")
             Divider()
             HStack {
                 Button("Open Tidy") { showMainWindow() }
@@ -68,6 +67,15 @@ struct MenuBarMonitorView: View {
         }
         .padding(14)
         .frame(width: 300)
+    }
+
+    /// Orange or red when macOS is short of memory, as on the Performance screen.
+    private func tint(for memory: MemoryStats) -> Color {
+        switch memory.pressure {
+        case .warning: return .orange
+        case .critical: return .red
+        default: return .accentColor
+        }
     }
 
     private func row(_ title: String, _ value: String) -> some View {
