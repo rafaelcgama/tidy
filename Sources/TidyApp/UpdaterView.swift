@@ -25,7 +25,7 @@ struct UpdaterView: View {
                     Image(systemName: "arrow.down.app")
                         .font(.system(size: 56))
                         .foregroundColor(.accentColor)
-                    Text("Check apps that update themselves (Sparkle) and Homebrew casks for newer versions.")
+                    Text("Check apps that update themselves (Sparkle) and Homebrew apps for newer versions.")
                         .font(.title3)
                         .multilineTextAlignment(.center)
                     Text("Checking contacts each app's update server. Nothing is installed without you.")
@@ -85,19 +85,14 @@ struct UpdaterView: View {
                             }
                         }
                     }
-                    if !model.appStoreApps.isEmpty {
-                        Section("App Store") {
-                            HStack {
-                                Text("\(model.appStoreApps.count) apps came from the App Store and update there.")
-                                Spacer()
-                                Button("Open App Store Updates") { model.openAppStoreUpdates() }
-                            }
-                        }
-                    }
                 }
             }
         }
         .navigationTitle("Updater")
+        // Back from updating an app in its own window, the list checks again by itself.
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            if model.hasChecked { model.check() }
+        }
         .alert("Something went wrong", isPresented: errorShown) {
             Button("OK", role: .cancel) {}
         } message: {
@@ -108,7 +103,7 @@ struct UpdaterView: View {
     private var summary: String {
         guard model.hasChecked else { return "Updates" }
         let count = model.updates.count + model.casks.count
-        return count == 0 ? "Everything is up to date" : "\(count) updates available"
+        return count == 0 ? "Everything is up to date" : count == 1 ? "1 update available" : "\(count) updates available"
     }
 
     private var errorShown: Binding<Bool> {
