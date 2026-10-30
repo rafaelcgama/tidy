@@ -179,14 +179,14 @@ Below that are two lists of who can watch you, each with an **Open** button:
 
 ### 6. Malware Scan
 
-Checks files for known malware, using Apple's own XProtect rules (read from your Mac) and the YARA engine.
+Checks your files against Apple's own malware list: the XProtect rules macOS uses, which Apple keeps up to date. Tidy reads them from your Mac and runs them with the YARA engine. The screen only mentions them when something's wrong, such as the list not being readable on your Mac.
 
 - **Quick Scan:** checks Downloads, your apps, what starts at login or boot, and the shared and temporary folders.
 - **Scan Folders or Files…:** checks only what you choose.
 
 Anything found is listed with its location and what it matched. Select it and click **Move to Quarantine…**. It can't run from there, and you can put it back if it was a mistake.
 
-Advanced: you can add your own YARA rules (`.yar`, `.yara`) and lists of known-bad SHA-256 hashes (`.txt`, `.csv`, `.tsv`, `.sha256`) with **Open Signatures Folder**. To test the scan safely, use the standard EICAR test file, which Tidy recognizes. Files over 128 MB and files stored only in iCloud aren't read.
+Advanced: you can add your own YARA rules (`.yar`, `.yara`) and lists of known-bad SHA-256 hashes (`.txt`, `.csv`, `.tsv`, `.sha256`) by putting them in `~/Library/Application Support/Tidy/Signatures`. A file that can't be used is named on the Malware Scan screen. To test the scan safely, use the standard EICAR test file, which Tidy recognizes. Files over 128 MB and files stored only in iCloud aren't read.
 
 ### 7. Performance
 
