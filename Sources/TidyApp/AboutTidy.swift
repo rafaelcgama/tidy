@@ -75,7 +75,7 @@ struct AboutTidyWindow: View {
         .frame(width: 360)
     }
 
-    /// "Version 1.1.3 (202610300204)", from Info.plist; run from Xcode, "Version 1.1.3 (development)".
+    /// "Version 2.0.0 (202610300204)", from Info.plist; run from Xcode, "Version 2.0.0 (development)".
     static var versionLine: String {
         guard let version = info("CFBundleShortVersionString") ?? SourceFolder.version else { return "Development version" }
         return "Version \(version) (\(info("CFBundleVersion") ?? "development"))"

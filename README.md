@@ -218,7 +218,7 @@ Settings for the script, put before the command:
 | `DEVELOPER_ID="Developer ID Application: Name (TEAMID)"` | signs with your Apple Developer ID and the hardened runtime, which the admin helper needs |
 | `NOTARY_PROFILE=name` | also notarizes the app and the disk image, so they open on any Mac without a warning (needs `DEVELOPER_ID`; create the profile with `xcrun notarytool store-credentials`) |
 | `BUNDLE_ID=com.you.tidy` | the app's id (default `com.example.tidy`). Settings and macOS permissions are tied to it. |
-| `VERSION=1.2.0` | the version number (default: the `VERSION` file) |
+| `VERSION=2.1.0` | the version number (default: the `VERSION` file) |
 | `NO_OPEN=1` | doesn't open the disk image at the end |
 
 ### Command-line tool
