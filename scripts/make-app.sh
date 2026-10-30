@@ -57,8 +57,7 @@ fi
 # signed as $BUNDLE_ID.helper by the same team, and the helper only to the app.
 "${SIGN[@]}" --identifier "$BUNDLE_ID.helper" "$APP/Contents/MacOS/TidyHelper"
 "${SIGN[@]}" --identifier "$BUNDLE_ID.cli" "$APP/Contents/Helpers/tidy"
-# The app may send Apple Events, which it needs to ask System Events for the apps that open at login.
-"${SIGN[@]}" --entitlements Resources/Tidy.entitlements "$APP"
+"${SIGN[@]}" "$APP"
 codesign --verify --strict "$APP"
 
 if [ -n "${NOTARY_PROFILE:-}" ]; then

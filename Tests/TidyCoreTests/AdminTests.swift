@@ -6,8 +6,8 @@ import Darwin
 import Glibc
 #endif
 
-/// What Tidy does as root without the admin helper (the password prompt, and Tidy run as root for one
-/// request), and switching login items. Stand-in osascript scripts take the place of macOS's.
+/// What Tidy does as root without the admin helper: the password prompt, and Tidy run as root for one
+/// request. Stand-in osascript scripts take the place of macOS's.
 final class AdminTests: XCTestCase {
     var tmp: URL!
     let fm = FileManager.default

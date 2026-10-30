@@ -271,7 +271,7 @@ Built with the app and included in it at `Tidy.app/Contents/Helpers/tidy`, or ru
 - `Sources/tidy`: the command-line tool
 - `Sources/CYara`: libyara 4.5.4 and its licenses (`NOTICE.md`)
 - `Tests/TidyCoreTests`: the tests
-- `Resources`: icon, `Info.plist`, entitlements, the helper's launchd file
+- `Resources`: icon, `Info.plist`, the helper's launchd file
 - `scripts`: `make-app.sh` (app and .dmg), `check.sh` (build and test), `make-icon.py` (icon)
 - `VERSION`: Tidy's version number, used by `make-app.sh`
 - `.github/workflows/build.yml`: tests and builds every push, and publishes each change to `main` as a release
