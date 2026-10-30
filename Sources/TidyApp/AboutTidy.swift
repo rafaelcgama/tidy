@@ -24,7 +24,16 @@ enum AboutTidy {
 
     static func show() {
         NSApp.activate(ignoringOtherApps: true)
-        NSApp.orderFrontStandardAboutPanel(options: [.credits: credits])
+        var options: [NSApplication.AboutPanelOptionKey: Any] = [.applicationName: "Tidy", .credits: credits]
+        if let version = info("CFBundleShortVersionString") ?? SourceFolder.version {
+            options[.applicationVersion] = version
+            options[.version] = info("CFBundleVersion") ?? "development"
+        }
+        NSApp.orderFrontStandardAboutPanel(options: options)
+    }
+
+    private static func info(_ key: String) -> String? {
+        Bundle.main.object(forInfoDictionaryKey: key) as? String
     }
 
     static var credits: NSAttributedString {
@@ -67,4 +76,28 @@ enum AboutTidy {
 
         THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         """
+}
+
+/// Run from Xcode, Tidy isn't an app bundle yet, so macOS knows no icon or version for it: it shows a
+/// folder and "TidyApp". Debug builds take both from the project folder instead, the icon and VERSION
+/// the .dmg gets. The app itself, built with make-app.sh, has them in Info.plist.
+enum SourceFolder {
+    #if DEBUG
+    static let root: URL? = URL(fileURLWithPath: #filePath)
+        .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+    #else
+    static let root: URL? = nil
+    #endif
+
+    /// Whether Tidy runs from Tidy.app rather than straight from the build folder.
+    static var isAppBundle: Bool { Bundle.main.bundleURL.pathExtension == "app" }
+
+    static var icon: NSImage? {
+        root.flatMap { NSImage(contentsOf: $0.appendingPathComponent("Resources/AppIcon.iconset/icon_512x512@2x.png")) }
+    }
+
+    static var version: String? {
+        root.flatMap { try? String(contentsOf: $0.appendingPathComponent("VERSION"), encoding: .utf8) }?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
 }

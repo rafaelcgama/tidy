@@ -60,8 +60,12 @@ struct TidyApp: App {
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // Lets `swift run TidyApp` show a normal window and Dock icon before there is an app bundle.
+        // Lets `swift run TidyApp` show a normal window and Dock icon before there is an app bundle,
+        // with Tidy's icon in the Dock, About Tidy and Software Update rather than a folder.
         NSApp.setActivationPolicy(.regular)
+        if !SourceFolder.isAppBundle, let icon = SourceFolder.icon {
+            NSApp.applicationIconImage = icon
+        }
         NSApp.activate(ignoringOtherApps: true)
         // Batches past their retention period are deleted for good: the app's own here, the
         // admin helper's when it's contacted.
