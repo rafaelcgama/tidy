@@ -12,7 +12,15 @@ final class SmartCareModel: ObservableObject {
         case done(CleanResult)
     }
 
+    /// The Junk Mail card: whether Mail is marking the junk, and what came of it.
+    enum MailJunkStatus: Equatable {
+        case ready
+        case marking
+        case finished(MailJunk.Outcome)
+    }
+
     @Published private(set) var phase: Phase = .idle
+    @Published private(set) var mailJunk: MailJunkStatus = .ready
     @Published var errorMessage: String?
 
     let store: QuarantineStore
@@ -25,6 +33,7 @@ final class SmartCareModel: ObservableObject {
     func run() {
         task?.cancel()
         phase = .running(step: "Starting…")
+        if case .finished = mailJunk { mailJunk = .ready }
         task = Task {
             do {
                 let report = try await SmartCare.standard().run { step in
@@ -77,5 +86,13 @@ final class SmartCareModel: ObservableObject {
 
     func reset() {
         phase = .idle
+    }
+
+    /// Asks Mail to mark the unread junk in every account as read.
+    func markMailJunkRead() {
+        mailJunk = .marking
+        Task {
+            mailJunk = .finished(await Task.detached { MailJunk().markRead() }.value)
+        }
     }
 }
