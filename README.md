@@ -38,10 +38,13 @@ Tidy checks for a new version when it starts, and Smart Care and the menu bar pa
 - **Safe places only.** Tidy looks only in known junk locations. It never touches `/System`, files macOS protects, Keychains, Mail or the Photos library, and it works without Full Disk Access.
 - **Your files are yours.** Tidy doesn't hunt for big or duplicate files. From Downloads it only offers to remove old installers, and malware if a scan finds any.
 
-macOS may ask you two things while you use Tidy:
+macOS may ask you three things while you use Tidy:
 
 - **Your administrator password**, when Tidy removes something that belongs to the whole Mac, such as system caches or an app's helper in `/Library`. The optional admin helper does that without asking (see Settings).
-- **Whether Tidy may look in Downloads**, the first time Smart Care, System Junk or Malware Scan does. Because Tidy isn't signed with a Developer ID, macOS may ask again after Tidy updates.
+- **Whether Tidy may look in Downloads**, the first time Smart Care, System Junk or Malware Scan does.
+- **Whether Tidy may control Finder**, the first time you click **Open Trash**, so that Finder opens the whole Trash, as the Dock does. If you don't allow it, Tidy opens your Trash folder, which shows only what you deleted on this Mac, not in iCloud Drive or on other disks.
+
+Because Tidy isn't signed with a Developer ID, macOS may ask the last two again after Tidy updates.
 
 ## The tabs
 
@@ -52,7 +55,7 @@ Each of the eight tabs in the sidebar does one job.
 One scan for everything System Junk and Protection check. The report shows:
 
 - **Cleanup:** how much junk is selected. **Review & Clean…** lists every item before anything moves, and **Choose Items in System Junk** lets you pick them one by one. If some leftovers of removed apps aren't selected because Tidy can't be sure about them, the report says how many.
-- **Trash:** **Open Trash** opens it in Finder, where you see what's in it and empty it. macOS keeps the Trash private from apps without Full Disk Access.
+- **Trash:** **Open Trash** opens Finder's Trash, the same one the Dock opens, where you see what's in it and empty it. macOS keeps the Trash private from apps without Full Disk Access.
 - **Protection:** "Nothing suspicious", or how many findings there are, with **Open Protection**.
 - **Apps:** which apps to remove is your call, so this points you to the Uninstaller.
 
@@ -246,7 +249,7 @@ Included in the app at `Tidy.app/Contents/Helpers/tidy`, or run it with `swift r
 | `Sources/tidy` | the command-line tool |
 | `Sources/CYara` | libyara 4.5.4, the YARA engine, with its licenses in `NOTICE.md` |
 | `Tests/TidyCoreTests` | the tests (XCTest) |
-| `Resources` | the icon, `Info.plist` and the helper's launchd file |
+| `Resources` | the icon, `Info.plist`, the app's entitlements and the helper's launchd file |
 | `scripts` | `make-app.sh` (app and .dmg), `check.sh` (build and test), `make-icon.py` (icon) |
 | `VERSION` | Tidy's version number |
 | `.github/workflows/build.yml` | tests and builds every push, and publishes each change to `main` as a release |
@@ -260,7 +263,7 @@ Included in the app at `Tidy.app/Contents/Helpers/tidy`, or run it with `swift r
 | Build | Swift Package Manager (`Package.swift`) and Xcode |
 | Malware engine | [libyara](https://github.com/VirusTotal/yara) 4.5.4 (C), included as source, running Apple's XProtect rules |
 | System frameworks | ServiceManagement (open at login, the admin helper, System Settings links), XPC (talking to the admin helper), Security (code signatures), CoreServices (when apps were last opened), CryptoKit (SHA-256), Combine |
-| macOS tools it runs | `launchctl` (stops and restarts startup items it moves), `pkgutil` (what an installer package put on the Mac), `mdfind` (apps installed outside Applications), `brew` (Homebrew updates), `osascript` (the administrator password prompt), `hdiutil`, `codesign` and `ditto` (installing an update), `open` |
+| macOS tools it runs | `launchctl` (stops and restarts startup items it moves), `pkgutil` (what an installer package put on the Mac), `mdfind` (apps installed outside Applications), `brew` (Homebrew updates), `osascript` (the administrator password prompt, and asking Finder to open the Trash), `hdiutil`, `codesign` and `ditto` (installing an update), `open` |
 | Packaging | `codesign` and `hdiutil`, optionally `notarytool` |
 | Releases | GitHub Actions |
 
