@@ -20,7 +20,7 @@ struct UninstallerView: View {
             model.loadApps()
         }
         .sheet(isPresented: $showingReview) {
-            ReviewSheet(title: model.selectedApp.map { "Remove \($0.name)?" } ?? "Remove these leftovers?",
+            ReviewSheet(title: "Remove \(model.selection?.name ?? "this app")?",
                         actionTitle: "Move to Quarantine",
                         items: model.selectedItems,
                         retentionDays: model.store.retentionDays) {
@@ -56,10 +56,6 @@ struct UninstallerView: View {
             .labelsHidden()
             .padding(8)
             List(selection: $model.selection) {
-                Section {
-                    Label("Leftovers of removed apps", systemImage: "questionmark.folder")
-                        .tag(UninstallerModel.Selection.orphans)
-                }
                 Section("Applications") {
                     ForEach(model.filteredApps) { app in
                         HStack {
@@ -74,7 +70,7 @@ struct UninstallerView: View {
                                     .foregroundColor(model.isUnused(app) ? .orange : .secondary)
                             }
                         }
-                        .tag(UninstallerModel.Selection.app(app))
+                        .tag(app)
                     }
                 }
             }
@@ -89,9 +85,9 @@ struct UninstallerView: View {
                 Image(systemName: "xmark.app")
                     .font(.system(size: 56))
                     .foregroundColor(.accentColor)
-                Text("Pick an app to remove it and everything it left behind,")
-                Text("or look for leftovers of apps you already deleted.")
+                Text("Pick an app to remove it and everything it put on your Mac.")
                 Text("Sort by Last Opened to find apps you no longer use.")
+                Text("What apps you already deleted left behind is in System Junk.")
             }
             .foregroundStyle(.secondary)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -184,7 +180,7 @@ struct UninstallerView: View {
 
     @ViewBuilder
     private var header: some View {
-        if let app = model.selectedApp {
+        if let app = model.selection {
             HStack(spacing: 12) {
                 Image(nsImage: NSWorkspace.shared.icon(forFile: app.url.path))
                     .resizable()
@@ -199,14 +195,6 @@ struct UninstallerView: View {
                 Text(ByteFormat.string(model.items.totalSize))
                     .font(.title3)
                     .monospacedDigit()
-            }
-        } else {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Leftovers of removed apps")
-                    .font(.title2.bold())
-                Text("These look like data from apps that are no longer in Applications. Nothing is preselected: apps installed elsewhere and helper tools can look the same, so check each item before you remove it.")
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
             }
         }
     }

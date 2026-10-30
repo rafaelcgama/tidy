@@ -78,11 +78,11 @@ final class ProtectionTests: XCTestCase {
         XCTAssertEqual(findings.first?.severity, .danger)
     }
 
-    func testMissingProgramIsALeftoverNotAThreat() {
+    func testMissingProgramIsLeftToSystemJunk() {
+        // It starts nothing, so it's no threat: System Junk lists it with what removed apps left behind.
         let findings = PersistenceAuditor().audit([item(label: "com.gone.helper", program: "/Applications/Gone.app/helper")],
                                                   fileExists: { _ in false })
-        XCTAssertEqual(findings.first?.severity, .notice)
-        XCTAssertTrue(findings.first?.reasons.first?.contains("no longer exists") == true)
+        XCTAssertTrue(findings.isEmpty)
     }
 
     func testFlagsStartupProgramsNoDeveloperSigned() {
@@ -103,8 +103,8 @@ final class ProtectionTests: XCTestCase {
             item(label: "com.gone.helper", program: "/Applications/Gone.app/helper"),
         ], fileExists: { !$0.hasPrefix("/Applications/Gone.app") }, signature: { checked.add($0); return signatures[$0] ?? .unknown })
 
-        XCTAssertEqual(Set(findings.map(\.title)), ["com.example.unsigned", "com.example.adhoc", "com.example.changed", "com.gone.helper"])
-        XCTAssertEqual(Set(findings.filter { $0.title != "com.gone.helper" }.map(\.severity)), [.warning])
+        XCTAssertEqual(Set(findings.map(\.title)), ["com.example.unsigned", "com.example.adhoc", "com.example.changed"])
+        XCTAssertEqual(Set(findings.map(\.severity)), [.warning])
         XCTAssertTrue(findings.first { $0.title == "com.example.changed" }?.reasons == ["Its program was changed after its developer signed it."])
         XCTAssertFalse(checked.all.contains { $0.hasPrefix("/opt/homebrew/") || $0.hasPrefix("/Applications/Gone.app") },
                        "Homebrew builds its programs without a developer's certificate, and a missing program has nothing to check")
@@ -118,10 +118,10 @@ final class ProtectionTests: XCTestCase {
 
     func testFindingsAreOrderedMostSevereFirst() {
         let findings = PersistenceAuditor().audit([
-            item(label: "a.leftover", program: "/Applications/Gone.app/x"),
+            item(label: "a.noprogram"),
             item(label: "b.danger", program: "/tmp/x"),
         ], fileExists: { $0.hasPrefix("/tmp") })
-        XCTAssertEqual(findings.map(\.title), ["b.danger", "a.leftover"])
+        XCTAssertEqual(findings.map(\.title), ["b.danger", "a.noprogram"])
     }
 
     func testFindsBrowserSettingsForcedByPolicy() throws {

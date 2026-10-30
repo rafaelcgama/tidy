@@ -228,22 +228,6 @@ final class UninstallerTests: XCTestCase {
         XCTAssertFalse(safe.permits(tmp.appendingPathComponent("Documents/file")))
     }
 
-    func testFindsOrphansOfDeletedAppsWithoutPreselecting() async throws {
-        try makeLibraryEntry("Application Support/com.gone.app", directory: true)
-        try makeLibraryEntry("Preferences/com.gone.app.plist")
-        try makeLibraryEntry("Caches/com.apple.Safari", directory: true)
-        try makeLibraryEntry("Preferences/com.foo.app.plist")
-        try makeLibraryEntry("Caches/com.foo.app.helper", directory: true)
-        try makeLibraryEntry("Application Support/com.foo", directory: true)
-        try makeLibraryEntry("Application Support/SomeFolder", directory: true)
-        try makeLibraryEntry("Logs/com.gone.app", directory: true)
-
-        let scanner = OrphanedLeftoversScanner(finder: LeftoverFinder(library: library), installedBundleIDs: ["com.foo.app"])
-        let items = try await scanner.scan { _ in }
-        XCTAssertEqual(names(items), ["Application Support/com.gone.app", "Preferences/com.gone.app.plist"])
-        XCTAssertTrue(items.allSatisfy { !$0.isSelected })
-    }
-
     func testBundleIDShape() {
         XCTAssertTrue(LeftoverFinder.looksLikeBundleID("com.example.app"))
         XCTAssertTrue(LeftoverFinder.looksLikeBundleID("org.mozilla.firefox-beta"))

@@ -6,7 +6,7 @@ Tidy is a native macOS app that keeps a Mac clean, safe and fast. It finds the h
 
 Over time a Mac collects things nobody asked for: caches that are never used again, logs, leftovers from installers and from apps you removed, old developer files, background helpers that start on their own, and sometimes things that shouldn't be there at all. Most of it is buried in hidden Library folders. Tidy finds it, explains it, and lets you remove it safely.
 
-What Tidy does **not** try to do: manage your own files. Big movies, duplicates and Downloads are yours, and you know where they are.
+What Tidy does **not** try to do: manage your own files. Big movies, duplicates and what you keep in Downloads are yours, and you know where they are. The only things Tidy looks for in Downloads are installers (.dmg, .pkg) that have done their job.
 
 Tidy follows a few rules everywhere:
 
@@ -119,6 +119,8 @@ The quick, all-in-one check. Click **Scan** and Tidy looks for junk (everything 
 - **Protection:** "Nothing suspicious" or how many things are worth a look, with **Open Protection**.
 - **Apps:** a pointer to the Uninstaller, because deciding which apps to remove needs you.
 
+What removed apps left behind is part of the junk. What Tidy can't be sure about isn't selected, and the report says how much of it there is, so you can check it in System Junk.
+
 After cleaning, it shows how much was moved to Quarantine, with **Undo**. The screen also shows when you last scanned, and a reminder when a scan is due, if you turned reminders on in Settings.
 
 ### 2. System Junk
@@ -129,9 +131,13 @@ Finds files that take up space without doing anything useful, grouped by kind:
 - **Package manager caches:** Homebrew, npm, Yarn, pnpm, pip, Cargo, Go, Gradle, CocoaPods, Conda
 - **Xcode leftovers:** DerivedData (build files), archives, iOS device support files, simulators and their caches
 - **Old macOS installers:** "Install macOS" apps
+- **Installers in Downloads:** disk images (.dmg), installer packages (.pkg) and Xcode archives (.xip) left in Downloads after they've done their job
+- **Leftovers of removed apps:** what apps you deleted left behind, in your Library and in `/Library` for all users: settings, saved data, window state, web caches and cookies, startup items and the helpers they start, and folders named after the app's maker once none of its apps is left (a "VMware" folder, say)
 - **System junk:** system caches, system logs, crash reports and archived logs. These need your administrator password and are never selected for you.
 
-What's selected for you is what's safe to remove. Caches used in the last 30 days are listed but not selected, because they keep apps fast. macOS installers for the version you run or an older one are selected, because you can download them again from Apple. Simulators that Xcode can no longer run are selected too.
+What's selected for you is what's safe to remove. Caches used in the last 30 days are listed but not selected, because they keep apps fast. macOS installers for the version you run or an older one are selected, because you can download them again from Apple. Simulators that Xcode can no longer run are selected too, and so are installers in Downloads once they're a week old.
+
+An app counts as installed wherever it is: in Applications, in your own Applications folder, or anywhere else Spotlight finds it. Its extensions and helpers count too, and so does every app from the same maker for the files makers share (updaters, licensing). Of what removed apps left, only what can't matter is selected: startup items whose program is gone (they start nothing), window state, web caches, cookies and recent-documents lists. The rest (settings, saved data, startup items that still run something) is for you to check, because an app kept somewhere Tidy can't see looks removed. What's in `/Library` needs your administrator password. Removed apps' containers are left alone, because macOS asks before any app looks inside another app's container.
 
 Tick what you want, click **Review & Clean…**, check the list and sizes, and confirm. The result screen has **Undo**.
 
@@ -147,7 +153,7 @@ Removes apps completely. Dragging an app to the Trash leaves its data behind. Ti
 
 The list includes iPhone and iPad apps installed on the Mac, and it updates by itself as soon as an app is added to or removed from Applications. It shows when you last opened each app. Sort by **Last Opened** to find apps you no longer use. Pick an app, check what's found, and click **Review & Remove…**. If the app is running, Tidy asks you to quit it first. Background helpers are stopped before they're removed, and started again if you undo.
 
-**Leftovers of removed apps** finds data from apps you've already deleted. Nothing there is selected for you, because some items can look like leftovers when they aren't, so check each one.
+What apps you already deleted left behind is in System Junk, under **Leftovers of removed apps**.
 
 ### 4. Updater
 
@@ -167,7 +173,6 @@ Checks what starts automatically with your Mac (launch agents and daemons) and y
 - programs not signed by a developer Apple knows, or changed after they were signed
 - programs that run from hidden, temporary or shared folders
 - scripts that download or decode code
-- startup items that point at programs that no longer exist (left over from removed apps)
 - browser settings forced by a profile, such as a locked search engine or extensions installed by policy, a common adware trick
 
 For each finding you can **Reveal in Finder** or **Move to Quarantine…** (it then won't start anymore, and you can undo it for 30 days). macOS's own items are never touched.

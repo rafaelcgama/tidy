@@ -77,4 +77,25 @@ public enum AppInventory {
         }
         return apps.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }
+
+    /// Every app on the Mac: the app folders' and, wherever else they are, the ones Spotlight knows.
+    public static func everyApp(home: URL = FileManager.default.homeDirectoryForCurrentUser) -> [InstalledApp] {
+        let listed = apps(in: defaultFolders(home: home) + systemFolders)
+        let seen = Set(listed.map(\.url.path))
+        return listed + spotlightApps().filter { !seen.contains($0.url.path) }
+    }
+
+    /// The apps Spotlight has found outside /System; none when Spotlight is off or can't answer.
+    static func spotlightApps() -> [InstalledApp] {
+        #if os(macOS)
+        guard let result = try? Subprocess.run(URL(fileURLWithPath: "/usr/bin/mdfind"),
+                                               ["kMDItemContentType == 'com.apple.application-bundle'"]),
+              result.status == 0 else { return [] }
+        return result.output.split(separator: "\n").map(String.init)
+            .filter { !$0.hasPrefix("/System/") && !$0.contains("/.Trash/") }
+            .compactMap { InstalledApp(bundleURL: URL(fileURLWithPath: $0)) }
+        #else
+        return []
+        #endif
+    }
 }

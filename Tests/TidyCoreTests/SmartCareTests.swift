@@ -53,7 +53,7 @@ final class SmartCareTests: XCTestCase {
         try Data(repeating: 1, count: 4096).write(to: cache)
         try FileManager.default.backdate(cache.deletingLastPathComponent(), days: 45)
 
-        let report = try await SmartCare.standard(home: home, systemLocations: [], applicationFolders: []).run()
+        let report = try await SmartCare.standard(home: home, systemLocations: [], applicationFolders: [], systemLibrary: nil).run()
         XCTAssertEqual(report.selectedCleanup.count, 1)
         XCTAssertTrue(report.safePaths.permits(cache))
     }

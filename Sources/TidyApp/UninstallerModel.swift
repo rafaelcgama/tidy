@@ -4,11 +4,6 @@ import TidyCore
 
 @MainActor
 final class UninstallerModel: ObservableObject {
-    enum Selection: Hashable {
-        case orphans
-        case app(InstalledApp)
-    }
-
     enum Sort: String, CaseIterable, Identifiable {
         case name = "Name"
         case lastOpened = "Last Opened"
@@ -29,7 +24,7 @@ final class UninstallerModel: ObservableObject {
     @Published var sort: Sort = .name
     /// When each app was last opened, by app id; missing when there's no record.
     @Published private(set) var lastOpened: [String: Date] = [:]
-    @Published var selection: Selection? {
+    @Published var selection: InstalledApp? {
         didSet { if selection != oldValue { scanSelection() } }
     }
     @Published private(set) var phase: Phase = .empty
@@ -72,11 +67,6 @@ final class UninstallerModel: ObservableObject {
     var groups: [CategorySummary] { items.groupedByCategory() }
     var selectedItems: [ScanItem] { items.filter(\.isSelected) }
 
-    var selectedApp: InstalledApp? {
-        if case .app(let app) = selection { return app }
-        return nil
-    }
-
     func loadApps() {
         loadTask?.cancel()
         loadTask = Task {
@@ -96,16 +86,8 @@ final class UninstallerModel: ObservableObject {
         }
     }
 
-    private func makeScanner(for selection: Selection) -> (scanner: any TidyCore.Scanner, safePaths: SafePaths) {
-        switch selection {
-        case .orphans:
-            let scanner = OrphanedLeftoversScanner(finder: finder, installedBundleIDs: installedBundleIDs)
-            return (scanner, scanner.safePaths)
-        case .app(let app):
-            let scanner = UninstallScanner(app: app, finder: finder, systemFinder: .system, packages: .system,
-                                           installedBundleIDs: installedBundleIDs)
-            return (scanner, scanner.safePaths)
-        }
+    private func makeScanner(for app: InstalledApp) -> UninstallScanner {
+        UninstallScanner(app: app, finder: finder, systemFinder: .system, packages: .system, installedBundleIDs: installedBundleIDs)
     }
 
     func scanSelection() {
@@ -117,7 +99,7 @@ final class UninstallerModel: ObservableObject {
         }
         phase = .scanning
         refreshRunning()
-        let scanner = makeScanner(for: selection).scanner
+        let scanner = makeScanner(for: selection)
         scanTask = Task {
             do {
                 let found = try await scanner.scan { _ in }
@@ -144,7 +126,7 @@ final class UninstallerModel: ObservableObject {
     }
 
     func refreshRunning() {
-        guard let app = selectedApp else {
+        guard let app = selection else {
             isRunning = false
             return
         }
@@ -152,7 +134,7 @@ final class UninstallerModel: ObservableObject {
     }
 
     func quitSelectedApp() {
-        guard let app = selectedApp else { return }
+        guard let app = selection else { return }
         NSRunningApplication.runningApplications(withBundleIdentifier: app.bundleID).forEach { $0.terminate() }
         Task {
             try? await Task.sleep(nanoseconds: 1_500_000_000)
