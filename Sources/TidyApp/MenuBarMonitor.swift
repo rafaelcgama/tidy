@@ -62,6 +62,17 @@ struct MenuBarMonitorView: View {
             HStack {
                 Button("Open Tidy") { showMainWindow() }
                 Spacer()
+                // Tidy has no menus of its own while it lives in the menu bar, so their items are here.
+                Menu {
+                    SettingsButton()
+                    CheckForUpdatesButton()
+                    Divider()
+                    TidyHelpButton()
+                    AboutTidyButton()
+                } label: {
+                    Image(systemName: "gearshape")
+                }
+                .fixedSize()
                 Button("Quit Tidy") { NSApp.terminate(nil) }
             }
         }
@@ -89,9 +100,8 @@ struct MenuBarMonitorView: View {
         }
     }
 
-    /// Brings the main window forward, or opens it again if it was closed, with Tidy back in the Dock.
+    /// Brings the main window forward, or opens it again if it was closed.
     private func showMainWindow() {
-        DockIcon.show()
         if let window = NSApp.windows.first(where: { $0.canBecomeMain && $0.isVisible }) {
             window.makeKeyAndOrderFront(nil)
         } else {

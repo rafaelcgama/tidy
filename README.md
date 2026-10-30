@@ -20,7 +20,7 @@ curl -fL -o ~/Downloads/Tidy.dmg https://github.com/rafaelcgama/clean-my-mac/rel
 
 ### Update
 
-Tidy checks for a new version when it starts, and Smart Care and the menu bar panel say when one is out. To check now, choose **Tidy › Check for Updates…** (also in the **Help** menu). The Software Update window shows what's new. **Install Update** downloads the new Tidy, checks it, replaces the old one and opens it again. Nothing is installed until you click, and your settings and Quarantine are kept.
+Tidy checks for a new version when it starts, and Smart Care and the menu bar panel say when one is out. To check now, choose **Check for Updates…** from the ⚙ menu in the menu bar panel. The Software Update window shows what's new. **Install Update** downloads the new Tidy, checks it, replaces the old one and opens it again. Nothing is installed until you click, and your settings and Quarantine are kept.
 
 ### Uninstall
 
@@ -108,7 +108,7 @@ What apps you already deleted left behind is in System Junk.
 - **Apps that update themselves (Sparkle):** **Release Notes** shows what's new, and **Open App to Update** opens the app so its own updater installs it. Betas and versions that need a newer macOS are skipped.
 - **Homebrew apps:** **Update** updates them from Tidy. If Homebrew can't, Tidy shows why.
 
-The list refreshes after each update. App Store apps are left to the App Store, and nothing is installed unless you click. Tidy updates itself from its own menu (see [Update](#update)).
+The list refreshes after each update. App Store apps are left to the App Store, and nothing is installed unless you click. Tidy updates itself (see [Update](#update)).
 
 ### Protection
 
@@ -159,20 +159,25 @@ Entries older than 30 days are deleted for good the next time Tidy starts.
 
 ## Menus, menu bar and settings
 
-### Menus
-
-- **About Tidy**, in the **Tidy** and **Help** menus: the version and build you have, links to this guide and the release notes, and the licenses of the code Tidy includes.
-- **Check for Updates…**, in the **Tidy** and **Help** menus (see [Update](#update)).
-- **Help › Tidy Help** opens this guide.
-
 ### Menu bar
 
-Tidy shows CPU and RAM use in the menu bar. Click it to see CPU, RAM and Hard Drive with a bar each, any reminder that's due, a new version of Tidy when there is one, and **Open Tidy** and **Quit Tidy**. While the menu bar monitor is on, closing Tidy's window keeps Tidy running there, out of the Dock, like other menu bar apps, and when Tidy opens at login it starts there, with no window. **Open Tidy** brings the window and the Dock icon back.
+Tidy lives in the menu bar, like other menu bar apps: it shows CPU and RAM use there and has no Dock icon, even while its window is open. Click it to see CPU, RAM and Hard Drive with a bar each, any reminder that's due, a new version of Tidy when there is one, **Open Tidy**, **Quit Tidy** and a ⚙ menu with:
 
-### Settings (⌘,)
+- **Settings…** (see below)
+- **Check for Updates…** (see [Update](#update))
+- **Tidy Help**, which opens this guide
+- **About Tidy:** the version and build you have, links to this guide and the release notes, and the licenses of the code Tidy includes
+
+Closing Tidy's window keeps it running in the menu bar, and when Tidy opens at login it starts there, with no window.
+
+### Menus
+
+With the menu bar monitor turned off (**Settings › General**), Tidy is an ordinary app instead: it's in the Dock, the items of the ⚙ menu are in its **Tidy** and **Help** menus, and closing its window quits it.
+
+### Settings
 
 - **Reminders:** off until you turn them on. Tidy reminds you when your last Smart Care scan or malware Quick Scan is older than one week, two weeks, a month or three months. Reminders show only in Smart Care and the menu bar panel, never as notifications.
-- **General:** show CPU and RAM in the menu bar, and open Tidy at login.
+- **General:** show CPU and RAM in the menu bar (turned off, Tidy is an ordinary app in the Dock), and open Tidy at login.
 - **Admin Helper:** optional. Without it, macOS asks for your password each time Tidy needs administrator rights. With it, a small helper does that work without asking, staying within a short list of system folders. It needs a Tidy signed with an Apple Developer ID (see [Build the .dmg yourself](#build-the-dmg-yourself)), so with the normal download macOS asks for your password instead.
 
 ### Where Tidy keeps things

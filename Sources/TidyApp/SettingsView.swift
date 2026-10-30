@@ -20,6 +20,33 @@ struct SettingsView: View {
     }
 }
 
+/// Settings…, in the menu bar panel's ⚙ menu: while Tidy lives in the menu bar it has no Tidy menu to hold it.
+struct SettingsButton: View {
+    var body: some View {
+        if #available(macOS 14, *) {
+            OpenSettingsButton()
+        } else {
+            Button("Settings…") {
+                NSApp.activate(ignoringOtherApps: true)
+                NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+            }
+        }
+    }
+}
+
+/// From macOS 14, SwiftUI opens Settings only through its own action.
+@available(macOS 14, *)
+private struct OpenSettingsButton: View {
+    @Environment(\.openSettings) private var openSettings
+
+    var body: some View {
+        Button("Settings…") {
+            NSApp.activate(ignoringOtherApps: true)
+            openSettings()
+        }
+    }
+}
+
 private struct ReminderSettings: View {
     @ObservedObject var model: ReminderModel
 

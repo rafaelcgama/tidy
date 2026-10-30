@@ -69,19 +69,20 @@ struct TidyApp: App {
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    private var windowChanges: [AnyCancellable] = []
+    private var settingChanges: AnyCancellable?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        windowChanges = DockIcon.follow()
+        DockIcon.update()
+        // Turning the menu bar monitor off in Settings or Performance puts Tidy in the Dock, and on takes it out.
+        settingChanges = NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)
+            .receive(on: RunLoop.main)
+            .sink { _ in DockIcon.update() }
         if DockIcon.menuBarMonitorShown && Self.openedAtLogin {
             // Opened at login: menu bar only. SwiftUI opens the main window as Tidy starts, by now or just
             // after this returns, so it's closed both times.
-            NSApp.setActivationPolicy(.accessory)
             DockIcon.closeWindows()
             DispatchQueue.main.async { DockIcon.closeWindows() }
         } else {
-            // Lets `swift run TidyApp` show a normal window and Dock icon before there is an app bundle.
-            NSApp.setActivationPolicy(.regular)
             NSApp.activate(ignoringOtherApps: true)
         }
         // Batches past their retention period are deleted for good: the app's own here, the
@@ -108,50 +109,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 }
 
-/// Tidy is in the Dock while one of its windows is open. With the menu bar monitor on, closing the last one
-/// leaves Tidy only in the menu bar, like other menu bar apps, and opening a window brings the Dock icon back.
+/// With the menu bar monitor on, Tidy lives in the menu bar like other menu bar apps: no Dock icon and no menus,
+/// even while its window is open; the panel's ⚙ menu has what the menus held. With it off, Tidy is an ordinary
+/// app in the Dock. Info.plist's LSUIElement starts Tidy out of the Dock, so it doesn't show there even briefly.
 @MainActor
 enum DockIcon {
     nonisolated static var menuBarMonitorShown: Bool {
         UserDefaults.standard.object(forKey: "showMenuBarMonitor") as? Bool ?? true
     }
 
-    /// Follows Tidy's windows as they open and close, for as long as what it returns is kept.
-    nonisolated static func follow() -> [AnyCancellable] {
-        let center = NotificationCenter.default
-        return [
-            center.publisher(for: NSWindow.didBecomeKeyNotification).sink { note in
-                guard let window = note.object as? NSWindow else { return }
-                // Unless it was closed meanwhile, as when Tidy starts at login.
-                Task { @MainActor in if window.isVisible && counts(window) { show() } }
-            },
-            // The task runs once the window is gone; while it closes, it still counts as open.
-            center.publisher(for: NSWindow.willCloseNotification).sink { note in
-                guard let window = note.object as? NSWindow else { return }
-                Task { @MainActor in if counts(window) { hideIfNoWindows() } }
-            },
-        ]
+    /// Out of the Dock while the menu bar monitor is on, in it while it's off. Runs without an app bundle
+    /// (`swift run`, Xcode) need this to show their windows at all.
+    static func update() {
+        let policy: NSApplication.ActivationPolicy = menuBarMonitorShown ? .accessory : .regular
+        if NSApp.activationPolicy() != policy {
+            NSApp.setActivationPolicy(policy)
+        }
     }
 
-    static func show() {
-        guard NSApp.activationPolicy() != .regular else { return }
-        NSApp.setActivationPolicy(.regular)
-        NSApp.activate(ignoringOtherApps: true)
-    }
-
-    /// Closes Tidy's windows, which leaves it in the menu bar only.
+    /// Closes Tidy's windows (main, Settings, Software Update, About), not the menu bar panel.
     static func closeWindows() {
-        NSApp.windows.filter(counts).forEach { $0.close() }
-    }
-
-    private static func hideIfNoWindows() {
-        let open = NSApp.windows.contains { counts($0) && ($0.isVisible || $0.isMiniaturized) }
-        guard menuBarMonitorShown, !open else { return }
-        NSApp.setActivationPolicy(.accessory)
-    }
-
-    /// Tidy's own windows (main, Settings, Software Update, About), not the menu bar panel, alerts or file pickers.
-    private static func counts(_ window: NSWindow) -> Bool {
-        !(window is NSPanel) && window.styleMask.contains(.titled) && window.level == .normal
+        for window in NSApp.windows where !(window is NSPanel) && window.styleMask.contains(.titled) && window.level == .normal {
+            window.close()
+        }
     }
 }
