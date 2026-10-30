@@ -145,7 +145,7 @@ Removes apps completely. Dragging an app to the Trash leaves its data behind. Ti
 - files in `/Library` for all users (helpers, background services, settings)
 - for apps installed with a .pkg installer, the other files that installer put on the Mac. Files shared with other apps are kept.
 
-The list shows when you last opened each app. Sort by **Last Opened** to find apps you no longer use. Pick an app, check what's found, and click **Review & Remove…**. If the app is running, Tidy asks you to quit it first. Background helpers are stopped before they're removed, and started again if you undo.
+The list includes iPhone and iPad apps installed on the Mac, and it updates by itself as soon as an app is added to or removed from Applications. It shows when you last opened each app. Sort by **Last Opened** to find apps you no longer use. Pick an app, check what's found, and click **Review & Remove…**. If the app is running, Tidy asks you to quit it first. Background helpers are stopped before they're removed, and started again if you undo.
 
 **Leftovers of removed apps** finds data from apps you've already deleted. Nothing there is selected for you, because some items can look like leftovers when they aren't, so check each one.
 
@@ -278,4 +278,4 @@ Built with the app and included in it at `Tidy.app/Contents/Helpers/tidy`, or ru
 
 ### Branches
 
-`main` holds released versions (tag `v1.0`). Each change is made on its own `dev/…` branch, pushed to GitHub, and merged into `main` through a pull request. Every push is tested and built on GitHub (the disk image is attached to the run under Actions), and every merge into `main` becomes a new release. To give a release a new version number, change `VERSION` in the pull request.
+`main` holds released versions (tag `v1.0`). Each change is made on its own `dev/…` branch, pushed to GitHub, and merged into `main` through a pull request. Every push is tested and built on GitHub (the disk image is attached to the run under Actions), and every merge into `main` becomes a new release. The pull request's title and description become the release notes that Check for Updates… shows. To give a release a new version number, change `VERSION` in the pull request; two releases with the same number are told apart by their build numbers.

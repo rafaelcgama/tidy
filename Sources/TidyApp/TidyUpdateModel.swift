@@ -209,9 +209,10 @@ struct TidyUpdateWindow: View {
                     .keyboardShortcut(.defaultAction)
                 }
             } else if let release = model.available {
+                let names = release.versionNames(installedVersion: model.installedVersion, installedBuild: model.installedBuild)
                 Text("A new version of Tidy is available!")
                     .font(.headline)
-                Text("Tidy \(release.version) is now available. You have \(model.installedVersion ?? "a development copy"). Would you like to install it now?")
+                Text("Tidy \(names.available) is now available. You have \(names.installed ?? "a development copy"). Would you like to install it now?")
                     .fixedSize(horizontal: false, vertical: true)
                 if !release.notes.isEmpty {
                     Text("Release Notes:")

@@ -21,7 +21,8 @@ exec > >(tee build/make-app-log.txt) 2>&1
 
 BUNDLE_ID="${BUNDLE_ID:-com.example.tidy}"
 VERSION="${VERSION:-$(cat VERSION)}"
-BUILD="${BUILD:-$(date +%Y%m%d%H%M)}"
+# The build number is the date and time in UTC, so builds made on any Mac or on GitHub sort in order.
+BUILD="${BUILD:-$(date -u +%Y%m%d%H%M)}"
 APP="build/Tidy.app"
 
 echo "Building for Apple silicon and Intel…"
