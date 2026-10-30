@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 import SwiftUI
 import TidyCore
 
@@ -67,10 +68,13 @@ struct TidyApp: App {
 }
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    private var windowChanges: [AnyCancellable] = []
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Lets `swift run TidyApp` show a normal window and Dock icon before there is an app bundle.
         NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
+        windowChanges = DockIcon.follow()
         // Batches past their retention period are deleted for good: the app's own here, the
         // admin helper's when it's contacted.
         _ = try? QuarantineStore(root: QuarantineStore.defaultRoot).purgeExpired()
@@ -83,6 +87,48 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// With the menu bar monitor on, closing the window keeps Tidy running in the menu bar.
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
-        !(UserDefaults.standard.object(forKey: "showMenuBarMonitor") as? Bool ?? true)
+        !DockIcon.menuBarMonitorShown
+    }
+}
+
+/// Tidy is in the Dock while one of its windows is open. With the menu bar monitor on, closing the last one
+/// leaves Tidy only in the menu bar, like other menu bar apps, and opening a window brings the Dock icon back.
+@MainActor
+enum DockIcon {
+    nonisolated static var menuBarMonitorShown: Bool {
+        UserDefaults.standard.object(forKey: "showMenuBarMonitor") as? Bool ?? true
+    }
+
+    /// Follows Tidy's windows as they open and close, for as long as what it returns is kept.
+    nonisolated static func follow() -> [AnyCancellable] {
+        let center = NotificationCenter.default
+        return [
+            center.publisher(for: NSWindow.didBecomeKeyNotification).sink { note in
+                guard let window = note.object as? NSWindow else { return }
+                Task { @MainActor in if counts(window) { show() } }
+            },
+            // The task runs once the window is gone; while it closes, it still counts as open.
+            center.publisher(for: NSWindow.willCloseNotification).sink { note in
+                guard let window = note.object as? NSWindow else { return }
+                Task { @MainActor in if counts(window) { hideIfNoWindows() } }
+            },
+        ]
+    }
+
+    static func show() {
+        guard NSApp.activationPolicy() != .regular else { return }
+        NSApp.setActivationPolicy(.regular)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
+    private static func hideIfNoWindows() {
+        let open = NSApp.windows.contains { counts($0) && ($0.isVisible || $0.isMiniaturized) }
+        guard menuBarMonitorShown, !open else { return }
+        NSApp.setActivationPolicy(.accessory)
+    }
+
+    /// Tidy's own windows (main, Settings, Software Update, About), not the menu bar panel, alerts or file pickers.
+    private static func counts(_ window: NSWindow) -> Bool {
+        !(window is NSPanel) && window.styleMask.contains(.titled) && window.level == .normal
     }
 }

@@ -89,8 +89,9 @@ struct MenuBarMonitorView: View {
         }
     }
 
-    /// Brings the main window forward, or opens it again if it was closed.
+    /// Brings the main window forward, or opens it again if it was closed, with Tidy back in the Dock.
     private func showMainWindow() {
+        DockIcon.show()
         if let window = NSApp.windows.first(where: { $0.canBecomeMain && $0.isVisible }) {
             window.makeKeyAndOrderFront(nil)
         } else {
