@@ -31,10 +31,14 @@ struct TidyApp: App {
             ContentView(monitor: monitor, reminders: reminders, navigation: navigation)
         }
         .commands {
-            CommandGroup(after: .appInfo) {
+            CommandGroup(replacing: .appInfo) {
+                AboutTidyButton()
                 CheckForUpdatesButton()
             }
-            CommandGroup(after: .help) {
+            CommandGroup(replacing: .help) {
+                TidyHelpButton()
+                Divider()
+                AboutTidyButton()
                 CheckForUpdatesButton()
             }
         }
