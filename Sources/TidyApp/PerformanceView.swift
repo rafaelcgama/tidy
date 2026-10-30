@@ -93,11 +93,11 @@ struct PerformanceView: View {
     private var suggestions: some View {
         if let memory = monitor.memory, memory.pressure != .normal {
             Suggestion(symbol: "memorychip", tint: memory.pressure == .critical ? .red : .orange,
-                       text: "Memory is running short, so macOS is compressing and swapping. Quitting apps you aren't using will speed things up.")
+                       text: "RAM is running short, so macOS is compressing and swapping. Quitting apps you aren't using will speed things up.")
         }
         if let disk = monitor.disk, disk.usedFraction > 0.9 {
             Suggestion(symbol: "internaldrive", tint: .orange,
-                       text: "Your startup disk is almost full, which slows macOS down.",
+                       text: "Your hard drive is almost full, which slows macOS down.",
                        actionTitle: "Free Up Space…") { selection = .smartCare }
         }
     }
