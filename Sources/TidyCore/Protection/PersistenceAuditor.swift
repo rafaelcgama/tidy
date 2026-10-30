@@ -38,7 +38,7 @@ public struct PersistenceAuditor: Sendable {
                 if !program.hasPrefix("/") {
                     // Relative programs are resolved by launchd; nothing to check on disk.
                 } else if !fileExists(program) {
-                    reasons.append("Starts a program that no longer exists (\(program)); probably left over from an uninstalled app.")
+                    // It starts nothing, so it's no threat: System Junk lists it with what removed apps left behind.
                 } else if !Self.isFromPackageManager(program) {
                     switch signature(program) {
                     case .notIdentified, .unsigned:

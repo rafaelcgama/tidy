@@ -64,9 +64,10 @@ struct ContentView: View {
                 ScanCleanView(model: systemJunk,
                               copy: .init(title: "System Junk",
                                           symbol: "trash.circle",
-                                          blurb: "Find app and package caches (Homebrew, npm, pip…), logs, Xcode build files and simulators, old macOS installers and other junk.",
+                                          blurb: "Find what removed apps left behind, app and package caches (Homebrew, npm, pip…), logs, Xcode build files and simulators, old installers and other junk.",
                                           note: "Caches used in the last 30 days aren't selected: they keep apps and installs fast, and removing them only means they're rebuilt. "
-                                              + "Installers for the macOS you run or an older one are selected, since Apple lets you download them again, and so are simulators Xcode can no longer run."))
+                                              + "Old macOS installers, simulators Xcode can no longer run and installers in Downloads over a week old are selected. "
+                                              + "Of what removed apps left, only what can't matter is selected, such as startup items that start nothing: check the rest yourself."))
             case .some(.uninstaller):
                 UninstallerView(model: uninstaller)
             case .some(.updater):

@@ -31,10 +31,14 @@ struct TidyApp: App {
             ContentView(monitor: monitor, reminders: reminders, navigation: navigation)
         }
         .commands {
-            CommandGroup(after: .appInfo) {
+            CommandGroup(replacing: .appInfo) {
+                AboutTidyButton()
                 CheckForUpdatesButton()
             }
-            CommandGroup(after: .help) {
+            CommandGroup(replacing: .help) {
+                TidyHelpButton()
+                Divider()
+                AboutTidyButton()
                 CheckForUpdatesButton()
             }
         }
@@ -42,6 +46,14 @@ struct TidyApp: App {
             TidyUpdateWindow(model: TidyUpdateModel.shared)
         }
         .windowResizability(.contentSize)
+        // Opened only from About Tidy in the Tidy and Help menus, not listed in the Window menu.
+        Window("About Tidy", id: AboutTidyWindow.id) {
+            AboutTidyWindow()
+        }
+        .windowStyle(.hiddenTitleBar)
+        .windowResizability(.contentSize)
+        .defaultPosition(.center)
+        .commandsRemoved()
         Settings {
             SettingsView(reminders: reminders)
         }

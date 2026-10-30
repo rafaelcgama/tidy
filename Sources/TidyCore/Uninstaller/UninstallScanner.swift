@@ -50,25 +50,52 @@ public struct UninstallScanner: CleaningScanner {
     }
 }
 
-/// Leftovers of apps that are no longer installed.
+/// What apps you removed left behind, in your Library and in /Library (see `LeftoverFinder.orphans`), for
+/// System Junk. From /Library, only what the admin helper would accept is offered.
 public struct OrphanedLeftoversScanner: CleaningScanner {
-    public let name = "Leftovers"
+    public let name = LeftoverFinder.orphanCategory
     public let finder: LeftoverFinder
-    public let installedBundleIDs: Set<String>
+    /// Usually `LeftoverFinder.system`.
+    public let systemFinder: LeftoverFinder?
+    /// The apps on the Mac, read when the scan starts.
+    public let apps: @Sendable () -> [InstalledApp]
+    /// What the admin helper accepts from `systemFinder`'s folders.
+    public let policy: HelperPolicy
 
-    public init(finder: LeftoverFinder = LeftoverFinder(), installedBundleIDs: Set<String>) {
+    public init(finder: LeftoverFinder = LeftoverFinder(), systemFinder: LeftoverFinder? = .system,
+                apps: @escaping @Sendable () -> [InstalledApp] = { AppInventory.everyApp() }, policy: HelperPolicy = .standard) {
         self.finder = finder
-        self.installedBundleIDs = installedBundleIDs
+        self.systemFinder = systemFinder
+        self.apps = apps
+        self.policy = policy
     }
 
+    private var finders: [LeftoverFinder] { [finder] + (systemFinder.map { [$0] } ?? []) }
+
     public var safePaths: SafePaths {
-        SafePaths(allowedRoots: finder.searchedFolders)
+        SafePaths(allowedRoots: finders.flatMap(\.searchedFolders))
     }
 
     public func scan(progress: @Sendable (ScanProgress) -> Void) async throws -> [ScanItem] {
-        progress(ScanProgress(completed: 0, total: 1, currentPath: finder.library.path))
-        let items = finder.orphans(installedBundleIDs: installedBundleIDs)
-        progress(ScanProgress(completed: 1, total: 1, currentPath: nil))
+        progress(ScanProgress(completed: 0, total: 2, currentPath: finder.library.path))
+        let known = KnownApps(apps(), libraries: finders.map(\.library))
+        let support = finders.flatMap { [$0.library.appendingPathComponent("Application Support").path,
+                                         $0.library.appendingPathComponent("PrivilegedHelperTools").path] }
+        var items = finder.orphans(known: known, supportFolders: support)
+        if let systemFinder {
+            try Task.checkCancellation()
+            progress(ScanProgress(completed: 1, total: 2, currentPath: systemFinder.library.path))
+            items += systemFinder.orphans(known: known, supportFolders: support).filter { policy.accepts($0.url) }
+        }
+        // Once some of a vendor's leftovers show all its apps are gone, folders named after it count too.
+        let gone = Set(items.compactMap { item -> String? in
+            let base = LeftoverFinder.baseName(item.url.lastPathComponent).lowercased()
+            guard LeftoverFinder.looksLikeBundleID(base), !known.hasVendor(of: base) else { return nil }
+            return KnownApps.vendor(of: base)
+        })
+        items += finder.vendorFolders(gone)
+        items += systemFinder?.vendorFolders(gone).filter { policy.accepts($0.url) } ?? []
+        progress(ScanProgress(completed: 2, total: 2, currentPath: nil))
         return items.sorted { $0.size > $1.size }
     }
 }

@@ -127,7 +127,7 @@ final class CombinedScannerTests: XCTestCase {
         try writePlist(["CFBundleIdentifier": "com.apple.InstallAssistant.macOSSonoma"],
                        to: installer.appendingPathComponent("Contents/Info.plist"))
 
-        let scanner = CombinedScanner.systemJunk(home: home, systemLocations: [], applicationFolders: [applications])
+        let scanner = CombinedScanner.systemJunk(home: home, systemLocations: [], applicationFolders: [applications], systemLibrary: nil)
         let items = try await scanner.scan { _ in }
         XCTAssertEqual(Set(items.map(\.category)), ["User caches", "macOS installers"])
         XCTAssertTrue(scanner.safePaths.permits(cache))

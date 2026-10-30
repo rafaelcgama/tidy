@@ -127,18 +127,35 @@ struct SmartCareView: View {
         }
     }
 
+    /// "3 more leftovers of removed apps (12 MB) aren't selected…"
+    private func unsureText(_ items: [ScanItem], more: Bool) -> String {
+        let what = items.count == 1 ? "leftover of removed apps isn't" : "leftovers of removed apps aren't"
+        return "\(items.count) \(more ? "more " : "")\(what) selected (\(ByteFormat.string(items.totalSize))), because Tidy can't be sure. Check them in System Junk."
+    }
+
     private func reportView(_ report: SmartCareReport) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 Card(title: "Cleanup", symbol: "trash.circle.fill", tint: .blue) {
-                    if report.selectedCleanup.isEmpty {
+                    // What removed apps left that Tidy can't be sure about isn't selected, so it's named here.
+                    let unsure = report.cleanup.filter { !$0.isSelected && $0.category == LeftoverFinder.orphanCategory }
+                    if report.selectedCleanup.isEmpty && unsure.isEmpty {
                         Text("No junk to clean.")
                             .foregroundStyle(.secondary)
-                    } else {
-                        Text("\(ByteFormat.string(report.selectedCleanup.totalSize)) of caches, logs, build files and other junk in \(report.selectedCleanup.count) items.")
+                    }
+                    if !report.selectedCleanup.isEmpty {
+                        Text("\(ByteFormat.string(report.selectedCleanup.totalSize)) of caches, logs, leftovers of removed apps and other junk in \(report.selectedCleanup.count) items.")
+                    }
+                    if !unsure.isEmpty {
+                        Text(unsureText(unsure, more: !report.selectedCleanup.isEmpty))
+                            .foregroundStyle(.secondary)
+                    }
+                    if !report.selectedCleanup.isEmpty || !unsure.isEmpty {
                         HStack {
-                            Button("Review & Clean…") { reviewing = report }
-                                .keyboardShortcut(.defaultAction)
+                            if !report.selectedCleanup.isEmpty {
+                                Button("Review & Clean…") { reviewing = report }
+                                    .keyboardShortcut(.defaultAction)
+                            }
                             Button("Choose Items in System Junk") { selection = .systemJunk }
                         }
                     }
@@ -166,7 +183,7 @@ struct SmartCareView: View {
                 }
 
                 Card(title: "Apps", symbol: "xmark.app.fill", tint: .purple) {
-                    Text("Which apps to remove needs your judgment, so Smart Care leaves that to the Uninstaller, along with what removed apps left behind.")
+                    Text("Which apps to remove needs your judgment, so Smart Care leaves that to the Uninstaller.")
                         .foregroundStyle(.secondary)
                     Button("Open Uninstaller") { selection = .uninstaller }
                 }

@@ -6,7 +6,7 @@ usage: tidy scan                 list system junk and its size
        tidy clean --dry-run      show what clean would move to quarantine
        tidy clean                move the preselected junk to quarantine (asks first)
        tidy updates              list apps and Homebrew casks with newer versions
-       tidy stats                CPU, memory, disk, network and the busiest processes
+       tidy stats                CPU, RAM, hard drive, network and the busiest processes
        tidy malware [path…]      check for malware (default: Downloads, apps, login items, shared and temporary folders)
        tidy malware --quarantine [path…]
                                  the same, then move what it finds to quarantine (asks first)
@@ -99,20 +99,20 @@ func run(_ args: [String]) async throws -> Int32 {
         let processes = ProcessSample.all()
         try await Task.sleep(nanoseconds: 1_000_000_000)
         if let ticks, let now = CPUTicks.current() {
-            print("CPU      \(Int((now.usage(since: ticks) * 100).rounded()))%")
+            print("CPU         \(Int((now.usage(since: ticks) * 100).rounded()))%")
         }
         if let memory = MemoryStats.current() {
-            let used = ByteFormat.string(Int64(clamping: memory.used)), total = ByteFormat.string(Int64(clamping: memory.total))
-            print("Memory   \(used) of \(total) used, pressure \(memory.pressure)")
+            let used = ByteFormat.memory(Int64(clamping: memory.used)), total = ByteFormat.memory(Int64(clamping: memory.total))
+            print("RAM         \(used) of \(total) used, pressure \(memory.pressure)")
         }
         if let disk = DiskSpace.of() {
-            print("Disk     \(ByteFormat.string(disk.available)) free of \(ByteFormat.string(disk.total))")
+            print("Hard Drive  \(ByteFormat.string(disk.available)) free of \(ByteFormat.string(disk.total))")
         }
         let rate = NetworkRate(from: interfaces, to: InterfaceCounters.current(), seconds: 1)
-        print("Network  down \(ByteFormat.string(Int64(rate.receivedPerSecond)))/s, up \(ByteFormat.string(Int64(rate.sentPerSecond)))/s")
+        print("Network     down \(ByteFormat.string(Int64(rate.receivedPerSecond)))/s, up \(ByteFormat.string(Int64(rate.sentPerSecond)))/s")
         print("\nBusiest processes (CPU % of one core):")
         for load in ProcessLoad.compare(processes, ProcessSample.all(), seconds: 1).prefix(10) {
-            let memory = ByteFormat.string(Int64(clamping: load.memory)).padding(toLength: 10, withPad: " ", startingAt: 0)
+            let memory = ByteFormat.memory(Int64(clamping: load.memory)).padding(toLength: 10, withPad: " ", startingAt: 0)
             print("  \(String(format: "%6.1f", load.cpuPercent))  \(memory) \(load.name)")
         }
         return 0

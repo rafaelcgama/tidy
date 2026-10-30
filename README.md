@@ -1,281 +1,275 @@
 # Tidy
 
-Tidy is a native macOS app that keeps a Mac clean, safe and fast. It finds the hidden junk you can't easily find by hand, removes apps together with everything they leave behind, checks for anything suspicious, and shows how busy the Mac is. It's a small, focused alternative to commercial Mac cleaners.
+Tidy keeps your Mac clean, safe and fast. It finds the junk that's hard to find by hand: what removed apps and old installers leave behind, caches and logs nothing uses anymore, and background helpers nobody needs. It removes apps completely, checks for malware and for anything suspicious that starts on its own, and shows how busy your Mac is. Whatever it removes can be put back for 30 days.
 
-## What it's about
-
-Over time a Mac collects things nobody asked for: caches that are never used again, logs, leftovers from installers and from apps you removed, old developer files, background helpers that start on their own, and sometimes things that shouldn't be there at all. Most of it is buried in hidden Library folders. Tidy finds it, explains it, and lets you remove it safely.
-
-What Tidy does **not** try to do: manage your own files. Big movies, duplicates and Downloads are yours, and you know where they are.
-
-Tidy follows a few rules everywhere:
-
-- **You see everything first.** Nothing is removed until you've seen the exact list of items and their sizes.
-- **Everything can be undone.** Removed items go to Tidy's Quarantine for 30 days, where you can put them back. Only after 30 days, or when you choose to delete them from Quarantine, are they gone for good.
-- **You decide when.** Tidy never scans, cleans or updates anything on its own, and it never shows notifications or popups. At most it tells you, inside the app, that a scan is due or that a new Tidy is available.
-- **No special access.** Tidy doesn't need Full Disk Access and never asks for it. When a task needs administrator rights (for example, system caches), macOS asks for your password.
-- **It never touches** `/System`, SIP-protected files, Keychains, Mail data or the Photos library, and it only looks in a fixed list of known junk locations.
-
-## Tech stack
-
-| Part | What's used |
-| --- | --- |
-| Language | Swift 5.10+ |
-| Interface | SwiftUI, with AppKit where SwiftUI falls short (menu bar, opening apps and Finder) |
-| Platform | macOS 13 Ventura or later, Apple silicon and Intel |
-| Build | Swift Package Manager (`Package.swift`), Xcode |
-| Malware engine | [libyara](https://github.com/VirusTotal/yara) 4.5.4 (C), included as source in `Sources/CYara`, plus Apple's own XProtect rules |
-| System frameworks | ServiceManagement (open at login, admin helper, System Settings links), XPC (talking to the admin helper), Security (code signature checks), CoreServices (Spotlight data for "last opened"), CryptoKit (SHA-256 hashes), Combine |
-| macOS tools it calls | `launchctl` (stop and restart background jobs it quarantines), `pkgutil` (what an installer package put on the Mac), `brew` (Homebrew updates), `osascript` (the administrator password prompt), `open` |
-| Tests | XCTest (`Tests/TidyCoreTests`) |
-| Packaging | `codesign`, `hdiutil` (the .dmg), optionally `notarytool` |
-| Releases | GitHub Actions: every push is tested and built; every change to `main` is published as a GitHub release with Tidy.dmg, which the app updates itself from |
-
-There are no third-party dependencies besides libyara.
-
-The package has five parts:
-
-- **TidyApp**: the app you see (SwiftUI)
-- **TidyCore**: all the logic: scanners, cleaning, Quarantine, the malware scanner, update checks, system monitoring
-- **TidyHelper**: the optional admin helper, a small background service that does administrator tasks
-- **tidy**: a command-line version of Tidy
-- **CYara**: the YARA malware engine
-
-## Requirements
-
-- A Mac with macOS 13 Ventura or later
-- Xcode (free on the App Store), to build the app. The Command Line Tools alone also work, but then the app is built only for your Mac's processor type.
-- Git, to download the code (it comes with Xcode)
+Tidy is a native Mac app for macOS 13 Ventura or later, on Apple silicon and Intel.
 
 ## Install
 
-### 1. Download the code
+1. Download [**Tidy.dmg**](https://github.com/rafaelcgama/clean-my-mac/releases/latest/download/Tidy.dmg) from the latest [release](https://github.com/rafaelcgama/clean-my-mac/releases).
+2. Open it and drag **Tidy** onto **Applications**. Then eject the Tidy disk (⏏ next to it in Finder's sidebar).
+3. Open Tidy from Applications.
 
-Open Terminal and run:
+The first time you open it, macOS says it can't check Tidy for malware, because Tidy isn't signed with a paid Apple Developer ID. Click **Done**, open **System Settings › Privacy & Security**, scroll down, click **Open Anyway** next to the message about Tidy, and confirm with your password. You only do this once.
+
+If you'd rather use Terminal, this downloads and opens the disk image without that warning:
+
+```sh
+curl -fL -o ~/Downloads/Tidy.dmg https://github.com/rafaelcgama/clean-my-mac/releases/latest/download/Tidy.dmg && open ~/Downloads/Tidy.dmg
+```
+
+### Update
+
+Tidy checks for a new version when it starts, and Smart Care and the menu bar panel say when one is out. To check now, choose **Tidy › Check for Updates…** (also in the **Help** menu). The Software Update window shows what's new. **Install Update** downloads the new Tidy, checks it, replaces the old one and opens it again. Nothing is installed until you click, and your settings and Quarantine are kept.
+
+### Uninstall
+
+1. In Quarantine, put back anything you want to keep.
+2. If you installed the admin helper, remove it in **Settings › Admin Helper**.
+3. Quit Tidy and drag it from Applications to the Trash.
+4. To remove its data too, delete `~/Library/Application Support/Tidy` and, if it exists, `/Library/Application Support/Tidy`.
+
+## How Tidy works
+
+- **You see everything first.** Nothing is removed until you've reviewed the exact items and their sizes.
+- **Everything can be undone.** What Tidy removes goes to Quarantine for 30 days, where you can put it back. It's gone for good only after that, or when you delete it from Quarantine yourself.
+- **You decide when.** Tidy never scans, cleans or updates on its own, and it never shows notifications. At most it tells you, inside Tidy, that a scan is due or that a new version is out.
+- **Speed comes first.** Caches that keep your apps fast stay: only caches nothing has used for 30 days are selected.
+- **Safe places only.** Tidy looks only in known junk locations. It never touches `/System`, files macOS protects, Keychains, Mail or the Photos library, and it works without Full Disk Access.
+- **Your files are yours.** Tidy doesn't hunt for big or duplicate files. From Downloads it only offers to remove old installers, and malware if a scan finds any.
+
+macOS may ask you two things while you use Tidy:
+
+- **Your administrator password**, when Tidy removes something that belongs to the whole Mac, such as system caches or an app's helper in `/Library`. The optional admin helper does that without asking (see Settings).
+- **Whether Tidy may look in Downloads**, the first time Smart Care, System Junk or Malware Scan does. Because Tidy isn't signed with a Developer ID, macOS may ask again after Tidy updates.
+
+## The tabs
+
+Each of the eight tabs in the sidebar does one job.
+
+### Smart Care
+
+One scan for everything System Junk and Protection check. The report shows:
+
+- **Cleanup:** how much junk is selected. **Review & Clean…** lists every item before anything moves, and **Choose Items in System Junk** lets you pick them one by one. If some leftovers of removed apps aren't selected because Tidy can't be sure about them, the report says how many.
+- **Trash:** **Open Trash** opens it in Finder, where you see what's in it and empty it. macOS keeps the Trash private from apps without Full Disk Access.
+- **Protection:** "Nothing suspicious", or how many findings there are, with **Open Protection**.
+- **Apps:** which apps to remove is your call, so this points you to the Uninstaller.
+
+After cleaning, Smart Care shows how much was moved to Quarantine, with **Undo**. Its start screen shows when you last scanned, a reminder when a scan is due, and a new version of Tidy when there is one.
+
+### System Junk
+
+Finds what takes up space without doing anything useful, grouped by kind:
+
+- **Your apps' caches and logs**
+- **Package manager caches:** Homebrew, npm, Yarn, pnpm, pip, Cargo, Go, Gradle, CocoaPods, Conda
+- **Xcode leftovers:** DerivedData, archives, iOS device support files, simulators and their caches
+- **Old macOS installers:** the "Install macOS" apps
+- **Installers in Downloads:** .dmg, .pkg and .xip files that have done their job
+- **Leftovers of removed apps:** what deleted apps left in your Library and in `/Library` for all users: settings, saved data, window state, web caches, cookies, startup items and the helpers they run, and folders named after the app's maker once none of its apps is left (a "VMware" folder, say)
+- **System caches, logs and crash reports**, which need your administrator password
+
+What's selected for you is what's safe to remove:
+
+- caches, Xcode build files and simulator caches nothing has used for 30 days, and your apps' logs
+- simulators Xcode can no longer run
+- macOS installers for the version you run or an older one, since Apple lets you download them again
+- installers in Downloads once they're a week old
+- of removed apps' leftovers, only what can't matter: startup items whose program is gone (they start nothing), window state, web caches, cookies and recent-documents lists
+
+Everything else is listed for you to tick, and system junk is never selected for you.
+
+An app counts as installed wherever it is: in Applications, in your own Applications folder, or anywhere else Spotlight finds it, along with the extensions and helpers inside it. Files an app maker's apps share, such as updaters, stay while any app from that maker is installed. What Tidy can't be sure about is listed but not selected, because an app kept somewhere Tidy can't see looks removed. Removed apps' containers are left alone, because macOS asks before an app looks inside another app's container.
+
+Tick what you want, click **Review & Clean…**, check the list and confirm. The result screen has **Undo**.
+
+### Uninstaller
+
+Removes an app together with everything it put on your Mac:
+
+- its settings, caches, saved data and containers in your Library
+- its logs and crash reports
+- the login items, background helpers and startup items it installed
+- its files in `/Library` for all users
+- for apps installed with a .pkg, everything that package installed. Files other apps share are kept.
+
+The list includes iPhone and iPad apps installed on the Mac, and it updates as soon as an app is added to or removed from Applications. Sort the list by **Last Opened** to find apps you no longer use. Pick an app, check what was found, and click **Review & Remove…**. A running app has to be quit first (**Quit App**). Background helpers are stopped before they're removed, and started again if you undo.
+
+What apps you already deleted left behind is in System Junk.
+
+### Updater
+
+**Check for Updates** finds newer versions of your apps:
+
+- **Apps that update themselves (Sparkle):** **Release Notes** shows what's new, and **Open App to Update** opens the app so its own updater installs it. Betas and versions that need a newer macOS are skipped.
+- **Homebrew apps:** **Update** updates them from Tidy. If Homebrew can't, Tidy shows why.
+
+The list refreshes after each update. App Store apps are left to the App Store, and nothing is installed unless you click. Tidy updates itself from its own menu (see [Update](#update)).
+
+### Protection
+
+Checks what starts on its own (launch agents and daemons) and your browsers' settings, and flags, with the reason:
+
+- programs not signed by a developer Apple knows, or changed after they were signed
+- programs that run from hidden, temporary or shared folders
+- scripts that download or decode code
+- browser settings forced by a profile, such as a locked search engine or extensions installed by policy, a common adware trick
+
+For each finding, **Reveal in Finder** shows it and **Move to Quarantine…** stops it from starting (you can undo that for 30 days). macOS's own items are never touched. Startup items whose program is gone start nothing, so they're listed in System Junk instead.
+
+Below the findings are two lists of who can watch you, each with an **Open** button:
+
+- **Apps that can watch you or control your Mac:** the System Settings pages for Camera, Microphone, Screen Recording, Input Monitoring and Accessibility, where you see which apps have access and can turn it off
+- **Websites that can watch you:** the page in Chrome, Firefox, Edge and Brave, when they're installed, that lists the sites allowed to use your camera, microphone, location, notifications and more
+
+### Malware Scan
+
+Checks your files against Apple's own malware list: the XProtect rules macOS uses, which Apple keeps up to date. Tidy reads them from your Mac and runs them with the YARA engine.
+
+- **Quick Scan:** Downloads, your apps, what starts at login or boot, and the shared and temporary folders
+- **Scan Folders or Files…:** only what you choose
+
+Each finding shows where it is and what it matched. **Move to Quarantine…** moves it where it can't run, and you can put it back if it was a mistake. The screen mentions Apple's list only if something is wrong with it. Files over 128 MB and files stored only in iCloud aren't read.
+
+For advanced use, put your own YARA rules (`.yar`, `.yara`) and lists of known-bad SHA-256 hashes (`.txt`, `.csv`, `.tsv`, `.sha256`) in `~/Library/Application Support/Tidy/Signatures`. A file that can't be used is named on the screen. To test the scan safely, use the standard EICAR test file, which Tidy recognizes.
+
+### Performance
+
+Live numbers from macOS:
+
+- **CPU:** how much is in use, out of how many cores. Click it to open Activity Monitor.
+- **RAM:** how much is in use, out of your total, counted the way Activity Monitor counts it (16 GB shows as 16 GB). The bar turns orange or red when RAM runs short. Click it to open Activity Monitor's Memory tab.
+- **Hard Drive:** how much space is free on your Mac's hard drive. Click it to open your home folder in Finder.
+
+When RAM or hard drive space runs low, a tip says what to do. **What starts with your Mac** explains the three lists macOS keeps of things that start by themselves (Open at Login, Background Activity and Extensions), and **Open System Settings…** opens the page where you turn them off. Tidy has no switches of its own for these, so it never disagrees with macOS. **Show in Menu Bar**, at the top right, turns the menu bar monitor on or off.
+
+### Quarantine
+
+Everything Tidy removed in the last 30 days, one entry per clean, with how many items and how much space:
+
+- **Put Back Selected** returns the ticked entries to where they came from. It never overwrites a file that has reappeared since.
+- **Delete Selected…** and **Delete All…** delete for good, after a confirmation that lists every item and its size.
+- Right-click an entry and choose **Show in Finder** to see its files.
+
+Entries older than 30 days are deleted for good the next time Tidy starts.
+
+## Menus, menu bar and settings
+
+### Menus
+
+- **About Tidy**, in the **Tidy** and **Help** menus: the version and build you have, links to this guide and the release notes, and the licenses of the code Tidy includes.
+- **Check for Updates…**, in the **Tidy** and **Help** menus (see [Update](#update)).
+- **Help › Tidy Help** opens this guide.
+
+### Menu bar
+
+Tidy shows CPU and RAM use in the menu bar. Click it to see CPU, RAM and Hard Drive with a bar each, any reminder that's due, a new version of Tidy when there is one, and **Open Tidy** and **Quit Tidy**. While the menu bar monitor is on, closing Tidy's window keeps Tidy running there.
+
+### Settings (⌘,)
+
+- **Reminders:** off until you turn them on. Tidy reminds you when your last Smart Care scan or malware Quick Scan is older than one week, two weeks, a month or three months. Reminders show only in Smart Care and the menu bar panel, never as notifications.
+- **General:** show CPU and RAM in the menu bar, and open Tidy at login.
+- **Admin Helper:** optional. Without it, macOS asks for your password each time Tidy needs administrator rights. With it, a small helper does that work without asking, staying within a short list of system folders. It needs a Tidy signed with an Apple Developer ID (see [Build the .dmg yourself](#build-the-dmg-yourself)), so with the normal download macOS asks for your password instead.
+
+### Where Tidy keeps things
+
+- **Quarantine:** `~/Library/Application Support/Tidy/Quarantine`, one folder per clean, each with a `manifest.json` of what came from where. `history.jsonl` in the same folder logs every move, put-back and deletion.
+- **What needed administrator rights:** `/Library/Application Support/Tidy/Quarantine`
+- **Your own malware rules:** `~/Library/Application Support/Tidy/Signatures`
+
+## Working on Tidy
+
+### Requirements
+
+- macOS 13 Ventura or later
+- Xcode, free on the App Store. With only the Command Line Tools, Tidy builds for your Mac's processor only.
+
+### Run from source
 
 ```sh
 git clone https://github.com/rafaelcgama/clean-my-mac.git
 cd clean-my-mac
+open Package.swift
 ```
 
-If you already have the folder, just `cd` into it.
+In Xcode, choose the **TidyApp** scheme and **My Mac**, then press ⌘R. Xcode runs whatever branch is checked out.
 
-### 2. Create the .dmg
+### Test
+
+```sh
+scripts/check.sh
+```
+
+Builds everything and runs every test. The full output is saved in `build-log.txt`. `swift test` runs the tests alone.
+
+### Build the .dmg yourself
 
 ```sh
 scripts/make-app.sh
 ```
 
-Don't use `sudo`. It takes a few minutes. The script:
-
-1. builds Tidy in release mode for Apple silicon and Intel
-2. assembles `build/Tidy.app`: the app, the admin helper, the command-line tool and the icon
-3. signs it (ad hoc, which is enough to run on your own Mac)
-4. creates the disk image `build/Tidy.dmg`, with Tidy and a shortcut to Applications
-5. opens the disk image
-
-Everything it prints is also saved in `build/make-app-log.txt`.
-
-### 3. Install from the .dmg
-
-1. In the window that opens, drag **Tidy** onto **Applications**.
-2. Eject the Tidy disk (click ⏏ next to it in Finder's sidebar).
-3. Open Tidy from Applications, Launchpad or Spotlight.
-
-From now on Tidy is a normal app. You don't need Terminal to use it.
-
-### Installing on another Mac
-
-Copy `build/Tidy.dmg` to the other Mac and do step 3. The first time you open Tidy there, macOS says it can't check it for malware, because the app isn't signed with a paid Apple Developer ID. Click **Done**, then go to System Settings › Privacy & Security and click **Open Anyway** next to Tidy. You only need to do this once.
-
-To make a build that opens anywhere without that step, you need an Apple Developer ID: run the script with `DEVELOPER_ID` and `NOTARY_PROFILE` set. The top of `scripts/make-app.sh` explains how.
-
-### Updating
-
-Once Tidy is installed, it updates itself like any other app:
-
-1. Choose **Tidy › Check for Updates…** (also in the **Help** menu). Tidy also checks by itself when it starts, and Smart Care and the menu bar panel say when a new version is available.
-2. The Software Update window shows the new version and its release notes. Click **Install Update**. Tidy downloads it, checks it, replaces itself and opens again. **Remind Me Later** closes the window.
-
-New versions come from this repository's [releases](https://github.com/rafaelcgama/clean-my-mac/releases): every change merged into `main` is built and published there automatically. Your settings and Quarantine are kept, because they're stored outside the app.
-
-### Uninstalling
-
-1. If you installed the admin helper, remove it: Settings › Admin Helper › **Remove Helper**.
-2. In Quarantine, put back anything you want to keep.
-3. Quit Tidy and drag it from Applications to the Trash.
-4. To remove its data too, delete the folder `~/Library/Application Support/Tidy`.
-
-## The tabs
-
-Tidy has eight tabs in its sidebar, each doing one job.
-
-### 1. Smart Care
-
-The quick, all-in-one check. Click **Scan** and Tidy looks for junk (everything System Junk covers) and for suspicious startup items and browser settings (everything Protection checks). It shows one report with:
-
-- **Junk:** how much was found and how many items. **Review & Clean…** shows the full list before anything is removed. **Choose Items in System Junk** takes you there to pick items one by one.
-- **Trash:** **Open Trash** opens the Trash in Finder, where you see what's in it and empty it.
-- **Protection:** "Nothing suspicious" or how many things are worth a look, with **Open Protection**.
-- **Apps:** a pointer to the Uninstaller, because deciding which apps to remove needs you.
-
-After cleaning, it shows how much was moved to Quarantine, with **Undo**. The screen also shows when you last scanned, and a reminder when a scan is due, if you turned reminders on in Settings.
-
-### 2. System Junk
-
-Finds files that take up space without doing anything useful, grouped by kind:
-
-- **Your apps' caches and logs**
-- **Package manager caches:** Homebrew, npm, Yarn, pnpm, pip, Cargo, Go, Gradle, CocoaPods, Conda
-- **Xcode leftovers:** DerivedData (build files), archives, iOS device support files, simulators and their caches
-- **Old macOS installers:** "Install macOS" apps
-- **System junk:** system caches, system logs, crash reports and archived logs. These need your administrator password and are never selected for you.
-
-What's selected for you is what's safe to remove. Caches used in the last 30 days are listed but not selected, because they keep apps fast. macOS installers for the version you run or an older one are selected, because you can download them again from Apple. Simulators that Xcode can no longer run are selected too.
-
-Tick what you want, click **Review & Clean…**, check the list and sizes, and confirm. The result screen has **Undo**.
-
-### 3. Uninstaller
-
-Removes apps completely. Dragging an app to the Trash leaves its data behind. Tidy finds that data too:
-
-- settings, caches, saved data and containers in your Library folder
-- logs and crash reports
-- background helpers and login items the app installed
-- files in `/Library` for all users (helpers, background services, settings)
-- for apps installed with a .pkg installer, the other files that installer put on the Mac. Files shared with other apps are kept.
-
-The list includes iPhone and iPad apps installed on the Mac, and it updates by itself as soon as an app is added to or removed from Applications. It shows when you last opened each app. Sort by **Last Opened** to find apps you no longer use. Pick an app, check what's found, and click **Review & Remove…**. If the app is running, Tidy asks you to quit it first. Background helpers are stopped before they're removed, and started again if you undo.
-
-**Leftovers of removed apps** finds data from apps you've already deleted. Nothing there is selected for you, because some items can look like leftovers when they aren't, so check each one.
-
-### 4. Updater
-
-Click **Check for Updates** to find newer versions of your apps (Tidy itself updates from Check for Updates…, see Updating above):
-
-- **Apps that update themselves (Sparkle):** Tidy checks each app's own update feed. **Release Notes** shows what's new. **Open App to Update** opens the app so its own updater installs the update. Beta versions, and versions that need a newer macOS, are skipped.
-- **Homebrew apps (casks):** **Update** updates them right from Tidy, including apps that are marked as updating themselves. If Homebrew can't update one, Tidy shows Homebrew's reason.
-
-The list checks again by itself after each update, and when you come back to Tidy after updating an app in its own window. App Store apps aren't listed: the App Store updates them.
-
-Nothing is installed unless you click.
-
-### 5. Protection
-
-Checks what starts automatically with your Mac (launch agents and daemons) and your browsers' settings. It flags, with the reason:
-
-- programs not signed by a developer Apple knows, or changed after they were signed
-- programs that run from hidden, temporary or shared folders
-- scripts that download or decode code
-- startup items that point at programs that no longer exist (left over from removed apps)
-- browser settings forced by a profile, such as a locked search engine or extensions installed by policy, a common adware trick
-
-For each finding you can **Reveal in Finder** or **Move to Quarantine…** (it then won't start anymore, and you can undo it for 30 days). macOS's own items are never touched.
-
-Below that are two lists of who can watch you, each with an **Open** button:
-
-- **Apps that can watch you or control your Mac:** opens the System Settings pages for Camera, Microphone, Screen Recording, Input Monitoring and Accessibility, where you see which apps have access and can turn it off
-- **Websites that can watch you:** opens the page in each installed browser (Chrome, Firefox, Edge, Brave) that lists websites allowed to use your camera, microphone, location, notifications and more.
-
-### 6. Malware Scan
-
-Checks your files against Apple's own malware list: the XProtect rules macOS uses, which Apple keeps up to date. Tidy reads them from your Mac and runs them with the YARA engine. The screen only mentions them when something's wrong, such as the list not being readable on your Mac.
-
-- **Quick Scan:** checks Downloads, your apps, what starts at login or boot, and the shared and temporary folders.
-- **Scan Folders or Files…:** checks only what you choose.
-
-Anything found is listed with its location and what it matched. Select it and click **Move to Quarantine…**. It can't run from there, and you can put it back if it was a mistake.
-
-Advanced: you can add your own YARA rules (`.yar`, `.yara`) and lists of known-bad SHA-256 hashes (`.txt`, `.csv`, `.tsv`, `.sha256`) by putting them in `~/Library/Application Support/Tidy/Signatures`. A file that can't be used is named on the Malware Scan screen. To test the scan safely, use the standard EICAR test file, which Tidy recognizes. Files over 128 MB and files stored only in iCloud aren't read.
-
-### 7. Performance
-
-Shows how busy your Mac is right now:
-
-- **CPU:** how much is in use, out of how many cores. Click it to open Activity Monitor.
-- **RAM:** how much memory is in use, out of your total. It's counted the way Activity Monitor counts it, so 16 GB shows as 16 GB, and the bar turns orange or red when memory runs short. Click it to open Activity Monitor on the Memory tab.
-- **Hard Drive:** how much space is free on your startup disk. Click it to open your home folder in Finder.
-
-All numbers are read live from macOS. When memory or disk space runs low, a tip explains what to do.
-
-**What starts with your Mac** explains the three lists macOS keeps of things that start by themselves: Open at Login (apps that open when you log in), Background Activity (hidden helpers like updaters) and Extensions (add-ons to macOS). **Open System Settings…** opens the page where you turn them on or off. Tidy has no switches of its own for these, so it can never disagree with macOS.
-
-**Show in Menu Bar** (top right) turns the menu bar monitor on or off.
-
-### 8. Quarantine
-
-Lists everything Tidy removed in the last 30 days, one entry per clean, with how many items and how much space.
-
-- **Put Back Selected:** returns the ticked entries to where they came from. It never overwrites a file that has reappeared since.
-- **Delete Selected…** and **Delete All…:** delete for good, after a confirmation that lists every item and its size.
-- Right-click an entry and choose **Show in Finder** to see its files.
-
-After 30 days, entries are deleted automatically the next time Tidy starts.
-
-## Menu bar
-
-Tidy shows CPU and RAM use in the menu bar. Click it to see CPU, RAM and Hard Drive, each with a bar like on the Performance screen, any due reminder or new version of Tidy, plus **Open Tidy** and **Quit Tidy**. While the menu bar monitor is on, closing Tidy's window keeps it running there.
-
-## Settings (⌘,)
-
-- **Reminders:** remind you when your last Smart Care scan or malware Quick Scan is older than a week, two weeks, a month or three months. Reminders appear only in Smart Care and in the menu bar panel, never as notifications.
-- **General:** show CPU and RAM in the menu bar, open Tidy at login.
-- **Admin Helper:** optional. Without it, macOS asks for your password each time Tidy needs administrator rights. With it, a small helper does that work without asking. It only works in a build signed with an Apple Developer ID, so with the normal build you'll be asked for your password instead.
-
-## Where Tidy keeps things
-
-- Your Quarantine: `~/Library/Application Support/Tidy/Quarantine`. Each clean is a folder with a `manifest.json` of what came from where.
-- A log of every move, put-back and deletion: `history.jsonl` in the same folder.
-- Items that needed administrator rights: `/Library/Application Support/Tidy/Quarantine`.
-- Your own malware rules: `~/Library/Application Support/Tidy/Signatures`.
-
-## Working on Tidy's code
-
-This part isn't about the app's tabs. It's for changing Tidy itself: running it from source, testing it and the project layout.
-
-### Run from source
-
-```sh
-open Package.swift
-```
-
-In Xcode, pick the **TidyApp** scheme and **My Mac**, then press ⌘R. Xcode runs whatever branch is checked out in the folder. The installed app is whatever `scripts/make-app.sh` last built.
-
-### Test
-
-```sh
-scripts/check.sh     # builds and runs all tests, output saved in build-log.txt
-swift test           # runs the tests
-```
+Don't use `sudo`. In a few minutes the script builds Tidy for Apple silicon and Intel, assembles `build/Tidy.app` (the app, the admin helper, the command-line tool and the icon), signs it ad hoc, makes `build/Tidy.dmg` and opens it. What it prints is also saved in `build/make-app-log.txt`.
+
+Settings for the script, put before the command:
+
+| Setting | What it does |
+| --- | --- |
+| `DEVELOPER_ID="Developer ID Application: Name (TEAMID)"` | signs with your Apple Developer ID and the hardened runtime, which the admin helper needs |
+| `NOTARY_PROFILE=name` | also notarizes the app and the disk image, so they open on any Mac without a warning (needs `DEVELOPER_ID`; create the profile with `xcrun notarytool store-credentials`) |
+| `BUNDLE_ID=com.you.tidy` | the app's id (default `com.example.tidy`). Settings and macOS permissions are tied to it. |
+| `VERSION=2.1.0` | the version number (default: the `VERSION` file) |
+| `NO_OPEN=1` | doesn't open the disk image at the end |
 
 ### Command-line tool
 
-Built with the app and included in it at `Tidy.app/Contents/Helpers/tidy`, or run it with `swift run tidy …`:
+Included in the app at `Tidy.app/Contents/Helpers/tidy`, or run it with `swift run tidy …`:
 
 | Command | What it does |
 | --- | --- |
-| `tidy scan` | list system junk and its size |
-| `tidy clean --dry-run` | show what would be moved to Quarantine |
-| `tidy clean` | move the preselected junk to Quarantine (asks first) |
-| `tidy updates` | list apps and Homebrew casks with newer versions |
-| `tidy stats` | CPU, memory, disk, network and the busiest processes |
-| `tidy malware [--quarantine] [path…]` | scan for malware |
-| `tidy quarantine` | list what's in Quarantine |
-| `tidy restore <batch-id>` | put a quarantined batch back |
+| `tidy scan` | lists system junk and its size |
+| `tidy clean --dry-run` | shows what `tidy clean` would move to Quarantine |
+| `tidy clean` | moves the selected junk to Quarantine, after you type yes. What needs administrator rights is skipped. |
+| `tidy updates` | lists apps and Homebrew casks with newer versions |
+| `tidy stats` | CPU, RAM, hard drive, network and the busiest processes |
+| `tidy malware [--quarantine] [path…]` | scans for malware, and with `--quarantine` moves what it finds to Quarantine |
+| `tidy quarantine` | lists what's in Quarantine |
+| `tidy restore <batch-id>` | puts a quarantined batch back |
 
 ### Project layout
 
-- `Sources/TidyApp`: the SwiftUI app, one view per tab
-- `Sources/TidyCore`: scanners, cleaning, Quarantine, the safe-path allowlist, the malware scanner, update checks, system monitoring
-- `Sources/TidyHelper`: the admin helper
-- `Sources/tidy`: the command-line tool
-- `Sources/CYara`: libyara 4.5.4 and its licenses (`NOTICE.md`)
-- `Tests/TidyCoreTests`: the tests
-- `Resources`: icon, `Info.plist`, the helper's launchd file
-- `scripts`: `make-app.sh` (app and .dmg), `check.sh` (build and test), `make-icon.py` (icon)
-- `VERSION`: Tidy's version number, used by `make-app.sh`
-- `.github/workflows/build.yml`: tests and builds every push, and publishes each change to `main` as a release
+| Path | What's there |
+| --- | --- |
+| `Sources/TidyApp` | the app (SwiftUI), one view per tab |
+| `Sources/TidyCore` | all the logic: scanners, cleaning, Quarantine, the allowlist of safe paths, the malware scanner, update checks, system monitoring |
+| `Sources/TidyHelper` | the optional admin helper |
+| `Sources/tidy` | the command-line tool |
+| `Sources/CYara` | libyara 4.5.4, the YARA engine, with its licenses in `NOTICE.md` |
+| `Tests/TidyCoreTests` | the tests (XCTest) |
+| `Resources` | the icon, `Info.plist` and the helper's launchd file |
+| `scripts` | `make-app.sh` (app and .dmg), `check.sh` (build and test), `make-icon.py` (icon) |
+| `VERSION` | Tidy's version number |
+| `.github/workflows/build.yml` | tests and builds every push, and publishes each change to `main` as a release |
 
-### Branches
+### Tech stack
 
-`main` holds released versions (tag `v1.0`). Each change is made on its own `dev/…` branch, pushed to GitHub, and merged into `main` through a pull request. Every push is tested and built on GitHub (the disk image is attached to the run under Actions), and every merge into `main` becomes a new release. The pull request's title and description become the release notes that Check for Updates… shows. To give a release a new version number, change `VERSION` in the pull request; two releases with the same number are told apart by their build numbers.
+| Part | What's used |
+| --- | --- |
+| Language | Swift 5.10 or later |
+| Interface | SwiftUI, with AppKit where SwiftUI falls short (menu bar, opening apps and Finder) |
+| Build | Swift Package Manager (`Package.swift`) and Xcode |
+| Malware engine | [libyara](https://github.com/VirusTotal/yara) 4.5.4 (C), included as source, running Apple's XProtect rules |
+| System frameworks | ServiceManagement (open at login, the admin helper, System Settings links), XPC (talking to the admin helper), Security (code signatures), CoreServices (when apps were last opened), CryptoKit (SHA-256), Combine |
+| macOS tools it runs | `launchctl` (stops and restarts startup items it moves), `pkgutil` (what an installer package put on the Mac), `mdfind` (apps installed outside Applications), `brew` (Homebrew updates), `osascript` (the administrator password prompt), `hdiutil`, `codesign` and `ditto` (installing an update), `open` |
+| Packaging | `codesign` and `hdiutil`, optionally `notarytool` |
+| Releases | GitHub Actions |
+
+There are no third-party dependencies besides libyara.
+
+### Branches and releases
+
+`main` holds what's released. Each change is made on its own `dev/…` branch, pushed to GitHub and merged into `main` through a pull request. GitHub Actions tests and builds every push (the disk image is attached to the run), and publishes every merge into `main` as a release with `Tidy.dmg`, which is where Check for Updates… gets new versions. The pull request's title and description become the release notes Tidy shows. `VERSION` sets the version number, so change it in the pull request to give a release a new one. The build number is the UTC date and time of the build, so two builds of one version are told apart.
+
+### Acknowledgements
+
+Malware Scan runs on [YARA](https://virustotal.github.io/yara/) 4.5.4 by The YARA Authors, under the BSD 3-Clause License. One of its modules is under the Apache License 2.0. Both licenses are in `Sources/CYara/NOTICE.md` and ship inside Tidy.app, and About Tidy shows YARA's.
