@@ -165,9 +165,7 @@ struct SmartCareView: View {
                 Card(title: "Trash", symbol: "trash.fill", tint: .orange) {
                     Text("Finder shows what's in the Trash and empties it.")
                         .foregroundStyle(.secondary)
-                    Button("Open Trash") {
-                        NSWorkspace.shared.open(FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".Trash"))
-                    }
+                    Button("Open Trash") { FinderTrash.show() }
                 }
 
                 Card(title: "Protection", symbol: "checkmark.shield.fill",
@@ -219,5 +217,16 @@ private struct Card<Content: View>: View {
         }
         .padding(16)
         .background(RoundedRectangle(cornerRadius: 10).fill(Color.secondary.opacity(0.08)))
+    }
+}
+
+extension FinderTrash {
+    /// Finder's Trash, as the Dock opens it. If macOS doesn't let Tidy ask Finder, your Trash folder,
+    /// which holds only what you deleted on this Mac.
+    @MainActor static func show() {
+        Task {
+            if await Task.detached(operation: { FinderTrash().open() }).value { return }
+            NSWorkspace.shared.open(FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".Trash"))
+        }
     }
 }

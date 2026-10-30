@@ -62,6 +62,17 @@ struct MenuBarMonitorView: View {
             HStack {
                 Button("Open Tidy") { showMainWindow() }
                 Spacer()
+                // Tidy has no menus of its own while it lives in the menu bar, so their items are here.
+                Menu {
+                    SettingsButton()
+                    CheckForUpdatesButton()
+                    Divider()
+                    TidyHelpButton()
+                    AboutTidyButton()
+                } label: {
+                    Image(systemName: "gearshape")
+                }
+                .fixedSize()
                 Button("Quit Tidy") { NSApp.terminate(nil) }
             }
         }

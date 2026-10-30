@@ -20,7 +20,7 @@ curl -fL -o ~/Downloads/Tidy.dmg https://github.com/rafaelcgama/clean-my-mac/rel
 
 ### Update
 
-Tidy checks for a new version when it starts, and Smart Care and the menu bar panel say when one is out. To check now, choose **Tidy › Check for Updates…** (also in the **Help** menu). The Software Update window shows what's new. **Install Update** downloads the new Tidy, checks it, replaces the old one and opens it again. Nothing is installed until you click, and your settings and Quarantine are kept.
+Tidy checks for a new version when it starts, and Smart Care and the menu bar panel say when one is out. To check now, choose **Check for Updates…** from the ⚙ menu in the menu bar panel. The Software Update window shows what's new. **Install Update** downloads the new Tidy, checks it, replaces the old one and opens it again. Nothing is installed until you click, and your settings and Quarantine are kept.
 
 ### Uninstall
 
@@ -38,10 +38,13 @@ Tidy checks for a new version when it starts, and Smart Care and the menu bar pa
 - **Safe places only.** Tidy looks only in known junk locations. It never touches `/System`, files macOS protects, Keychains, Mail or the Photos library, and it works without Full Disk Access.
 - **Your files are yours.** Tidy doesn't hunt for big or duplicate files. From Downloads it only offers to remove old installers, and malware if a scan finds any.
 
-macOS may ask you two things while you use Tidy:
+macOS may ask you three things while you use Tidy:
 
 - **Your administrator password**, when Tidy removes something that belongs to the whole Mac, such as system caches or an app's helper in `/Library`. The optional admin helper does that without asking (see Settings).
-- **Whether Tidy may look in Downloads**, the first time Smart Care, System Junk or Malware Scan does. Because Tidy isn't signed with a Developer ID, macOS may ask again after Tidy updates.
+- **Whether Tidy may look in Downloads**, the first time Smart Care, System Junk or Malware Scan does.
+- **Whether Tidy may control Finder**, the first time you click **Open Trash**, so that Finder opens the whole Trash, as the Dock does. If you don't allow it, Tidy opens your Trash folder, which shows only what you deleted on this Mac, not in iCloud Drive or on other disks.
+
+Because Tidy isn't signed with a Developer ID, macOS may ask the last two again after Tidy updates.
 
 ## The tabs
 
@@ -52,7 +55,7 @@ Each of the eight tabs in the sidebar does one job.
 One scan for everything System Junk and Protection check. The report shows:
 
 - **Cleanup:** how much junk is selected. **Review & Clean…** lists every item before anything moves, and **Choose Items in System Junk** lets you pick them one by one. If some leftovers of removed apps aren't selected because Tidy can't be sure about them, the report says how many.
-- **Trash:** **Open Trash** opens it in Finder, where you see what's in it and empty it. macOS keeps the Trash private from apps without Full Disk Access.
+- **Trash:** **Open Trash** opens Finder's Trash, the same one the Dock opens, where you see what's in it and empty it. macOS keeps the Trash private from apps without Full Disk Access.
 - **Protection:** "Nothing suspicious", or how many findings there are, with **Open Protection**.
 - **Apps:** which apps to remove is your call, so this points you to the Uninstaller.
 
@@ -105,7 +108,7 @@ What apps you already deleted left behind is in System Junk.
 - **Apps that update themselves (Sparkle):** **Release Notes** shows what's new, and **Open App to Update** opens the app so its own updater installs it. Betas and versions that need a newer macOS are skipped.
 - **Homebrew apps:** **Update** updates them from Tidy. If Homebrew can't, Tidy shows why.
 
-The list refreshes after each update. App Store apps are left to the App Store, and nothing is installed unless you click. Tidy updates itself from its own menu (see [Update](#update)).
+The list refreshes after each update. App Store apps are left to the App Store, and nothing is installed unless you click. Tidy updates itself (see [Update](#update)).
 
 ### Protection
 
@@ -156,20 +159,25 @@ Entries older than 30 days are deleted for good the next time Tidy starts.
 
 ## Menus, menu bar and settings
 
-### Menus
-
-- **About Tidy**, in the **Tidy** and **Help** menus: the version and build you have, links to this guide and the release notes, and the licenses of the code Tidy includes.
-- **Check for Updates…**, in the **Tidy** and **Help** menus (see [Update](#update)).
-- **Help › Tidy Help** opens this guide.
-
 ### Menu bar
 
-Tidy shows CPU and RAM use in the menu bar. Click it to see CPU, RAM and Hard Drive with a bar each, any reminder that's due, a new version of Tidy when there is one, and **Open Tidy** and **Quit Tidy**. While the menu bar monitor is on, closing Tidy's window keeps Tidy running there.
+Tidy lives in the menu bar, like other menu bar apps: it shows CPU and RAM use there and has no Dock icon, even while its window is open. Click it to see CPU, RAM and Hard Drive with a bar each, any reminder that's due, a new version of Tidy when there is one, **Open Tidy**, **Quit Tidy** and a ⚙ menu with:
 
-### Settings (⌘,)
+- **Settings…** (see below)
+- **Check for Updates…** (see [Update](#update))
+- **Tidy Help**, which opens this guide
+- **About Tidy:** the version and build you have, links to this guide and the release notes, and the licenses of the code Tidy includes
+
+Closing Tidy's window keeps it running in the menu bar, and when Tidy opens at login it starts there, with no window.
+
+### Menus
+
+With the menu bar monitor turned off (**Settings › General**), Tidy is an ordinary app instead: it's in the Dock, the items of the ⚙ menu are in its **Tidy** and **Help** menus, and closing its window quits it.
+
+### Settings
 
 - **Reminders:** off until you turn them on. Tidy reminds you when your last Smart Care scan or malware Quick Scan is older than one week, two weeks, a month or three months. Reminders show only in Smart Care and the menu bar panel, never as notifications.
-- **General:** show CPU and RAM in the menu bar, and open Tidy at login.
+- **General:** show CPU and RAM in the menu bar (turned off, Tidy is an ordinary app in the Dock), and open Tidy at login.
 - **Admin Helper:** optional. Without it, macOS asks for your password each time Tidy needs administrator rights. With it, a small helper does that work without asking, staying within a short list of system folders. It needs a Tidy signed with an Apple Developer ID (see [Build the .dmg yourself](#build-the-dmg-yourself)), so with the normal download macOS asks for your password instead.
 
 ### Where Tidy keeps things
@@ -193,7 +201,7 @@ cd clean-my-mac
 open Package.swift
 ```
 
-In Xcode, choose the **TidyApp** scheme and **My Mac**, then press ⌘R. Xcode runs whatever branch is checked out.
+In Xcode, choose the **TidyApp** scheme and **My Mac**, then press ⌘R. Xcode runs whatever branch is checked out. Runs from Xcode have no app bundle, so they show in the Dock as a plain program (exec), with Tidy's menus, while the installed Tidy lives in the menu bar only.
 
 ### Test
 
@@ -246,7 +254,7 @@ Included in the app at `Tidy.app/Contents/Helpers/tidy`, or run it with `swift r
 | `Sources/tidy` | the command-line tool |
 | `Sources/CYara` | libyara 4.5.4, the YARA engine, with its licenses in `NOTICE.md` |
 | `Tests/TidyCoreTests` | the tests (XCTest) |
-| `Resources` | the icon, `Info.plist` and the helper's launchd file |
+| `Resources` | the icon, `Info.plist`, the app's entitlements and the helper's launchd file |
 | `scripts` | `make-app.sh` (app and .dmg), `check.sh` (build and test), `make-icon.py` (icon) |
 | `VERSION` | Tidy's version number |
 | `.github/workflows/build.yml` | tests and builds every push, and publishes each change to `main` as a release |
@@ -256,11 +264,11 @@ Included in the app at `Tidy.app/Contents/Helpers/tidy`, or run it with `swift r
 | Part | What's used |
 | --- | --- |
 | Language | Swift 5.10 or later |
-| Interface | SwiftUI, with AppKit where SwiftUI falls short (menu bar, opening apps and Finder) |
+| Interface | SwiftUI, with AppKit where SwiftUI falls short (menu bar, Dock icon, opening apps and Finder) |
 | Build | Swift Package Manager (`Package.swift`) and Xcode |
 | Malware engine | [libyara](https://github.com/VirusTotal/yara) 4.5.4 (C), included as source, running Apple's XProtect rules |
 | System frameworks | ServiceManagement (open at login, the admin helper, System Settings links), XPC (talking to the admin helper), Security (code signatures), CoreServices (when apps were last opened), CryptoKit (SHA-256), Combine |
-| macOS tools it runs | `launchctl` (stops and restarts startup items it moves), `pkgutil` (what an installer package put on the Mac), `mdfind` (apps installed outside Applications), `brew` (Homebrew updates), `osascript` (the administrator password prompt), `hdiutil`, `codesign` and `ditto` (installing an update), `open` |
+| macOS tools it runs | `launchctl` (stops and restarts startup items it moves), `pkgutil` (what an installer package put on the Mac), `mdfind` (apps installed outside Applications), `brew` (Homebrew updates), `osascript` (the administrator password prompt, and asking Finder to open the Trash), `hdiutil`, `codesign` and `ditto` (installing an update), `open` |
 | Packaging | `codesign` and `hdiutil`, optionally `notarytool` |
 | Releases | GitHub Actions |
 

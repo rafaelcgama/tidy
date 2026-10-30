@@ -57,7 +57,8 @@ fi
 # signed as $BUNDLE_ID.helper by the same team, and the helper only to the app.
 "${SIGN[@]}" --identifier "$BUNDLE_ID.helper" "$APP/Contents/MacOS/TidyHelper"
 "${SIGN[@]}" --identifier "$BUNDLE_ID.cli" "$APP/Contents/Helpers/tidy"
-"${SIGN[@]}" "$APP"
+# The hardened runtime lets the app ask Finder to open the Trash only with this entitlement.
+"${SIGN[@]}" --entitlements Resources/Tidy.entitlements "$APP"
 codesign --verify --strict "$APP"
 
 if [ -n "${NOTARY_PROFILE:-}" ]; then
