@@ -8,6 +8,8 @@ final class SmartCareModel: ObservableObject {
         case idle
         case running(step: String)
         case report(SmartCareReport)
+        /// The report's junk, listed by kind to tick item by item.
+        case choosing(SmartCareReport)
         case cleaning
         case done(CleanResult)
     }
@@ -20,6 +22,8 @@ final class SmartCareModel: ObservableObject {
     }
 
     @Published private(set) var phase: Phase = .idle
+    /// The junk the last scan found, with your ticks. What's safe to remove starts ticked.
+    @Published private(set) var cleanup: [ScanItem] = []
     @Published private(set) var mailJunk: MailJunkStatus = .ready
     @Published var errorMessage: String?
 
@@ -29,6 +33,10 @@ final class SmartCareModel: ObservableObject {
     init(store: QuarantineStore = QuarantineStore(root: QuarantineStore.defaultRoot)) {
         self.store = store
     }
+
+    var cleanupGroups: [CategorySummary] { cleanup.groupedByCategory() }
+    var selectedCleanup: [ScanItem] { cleanup.filter(\.isSelected) }
+    var allCleanupSelected: Bool { !cleanup.isEmpty && cleanup.allSatisfy(\.isSelected) }
 
     func run() {
         task?.cancel()
@@ -43,6 +51,7 @@ final class SmartCareModel: ObservableObject {
                         }
                     }
                 }
+                cleanup = report.cleanup
                 phase = .report(report)
                 ReminderModel.shared.recordScan(.smartCare)
             } catch is CancellationError {
@@ -58,8 +67,35 @@ final class SmartCareModel: ObservableObject {
         task?.cancel()
     }
 
-    func clean(_ report: SmartCareReport) {
-        let items = report.selectedCleanup
+    /// Lists the junk by kind, to tick item by item.
+    func choose(_ report: SmartCareReport) {
+        phase = .choosing(report)
+    }
+
+    /// Back to the report, keeping the ticks.
+    func closeList(_ report: SmartCareReport) {
+        phase = .report(report)
+    }
+
+    func toggle(_ item: ScanItem) {
+        guard let index = cleanup.firstIndex(where: { $0.id == item.id }) else { return }
+        cleanup[index].isSelected.toggle()
+    }
+
+    func setCategory(_ category: String, selected: Bool) {
+        for index in cleanup.indices where cleanup[index].category == category {
+            cleanup[index].isSelected = selected
+        }
+    }
+
+    func selectAll(_ selected: Bool) {
+        for index in cleanup.indices {
+            cleanup[index].isSelected = selected
+        }
+    }
+
+    /// Moves the items to quarantine. They come from the report's list, which is shown again if it fails.
+    func clean(_ items: [ScanItem], from report: SmartCareReport) {
         phase = .cleaning
         task = Task {
             do {
@@ -67,7 +103,7 @@ final class SmartCareModel: ObservableObject {
                 phase = .done(result)
             } catch {
                 errorMessage = error.localizedDescription
-                phase = .report(report)
+                phase = .choosing(report)
             }
         }
     }
@@ -80,11 +116,12 @@ final class SmartCareModel: ObservableObject {
             } catch {
                 errorMessage = error.localizedDescription
             }
-            phase = .idle
+            reset()
         }
     }
 
     func reset() {
+        cleanup = []
         phase = .idle
     }
 

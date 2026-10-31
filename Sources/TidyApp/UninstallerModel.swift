@@ -66,6 +66,7 @@ final class UninstallerModel: ObservableObject {
 
     var groups: [CategorySummary] { items.groupedByCategory() }
     var selectedItems: [ScanItem] { items.filter(\.isSelected) }
+    var allSelected: Bool { !items.isEmpty && items.allSatisfy(\.isSelected) }
 
     func loadApps() {
         loadTask?.cancel()
@@ -125,6 +126,12 @@ final class UninstallerModel: ObservableObject {
         }
     }
 
+    func selectAll(_ selected: Bool) {
+        for index in items.indices {
+            items[index].isSelected = selected
+        }
+    }
+
     func refreshRunning() {
         guard let app = selection else {
             isRunning = false
@@ -142,9 +149,8 @@ final class UninstallerModel: ObservableObject {
         }
     }
 
-    func remove() {
+    func remove(_ chosen: [ScanItem]) {
         guard let selection else { return }
-        let chosen = selectedItems
         let safePaths = makeScanner(for: selection).safePaths
         phase = .removing
         scanTask = Task {

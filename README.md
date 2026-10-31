@@ -41,7 +41,7 @@ Tidy checks for a new version when it starts, and Smart Care and the menu bar pa
 macOS may ask you four things while you use Tidy:
 
 - **Your administrator password**, when Tidy removes something that belongs to the whole Mac, such as system caches or an app's helper in `/Library`. The optional admin helper does that without asking (see Settings).
-- **Whether Tidy may look in Downloads**, the first time Smart Care, System Junk or Malware Scan does.
+- **Whether Tidy may look in Downloads**, the first time Smart Care or Malware Scan does.
 - **Whether Tidy may control Finder**, the first time you click **Open Trash**, so that Finder opens the whole Trash, as the Dock does. If you don't allow it, Tidy opens your Trash folder, which shows only what you deleted on this Mac, not in iCloud Drive or on other disks.
 - **Whether Tidy may control Mail**, the first time you click **Mark Junk as Read**. If you don't allow it, Smart Care says where to turn it on later.
 
@@ -49,23 +49,23 @@ Because Tidy isn't signed with a Developer ID, macOS may ask the last three agai
 
 ## The tabs
 
-Each of the eight tabs in the sidebar does one job.
+Each of the seven tabs in the sidebar does one job.
 
 ### Smart Care
 
-One scan for everything System Junk and Protection check. The report shows:
+One scan for junk, login items and browser settings. The report shows:
 
-- **Cleanup:** how much junk is selected. **Review & Clean…** lists every item before anything moves, and **Choose Items in System Junk** lets you pick them one by one. If some leftovers of removed apps aren't selected because Tidy can't be sure about them, the report says how many.
+- **Cleanup:** how much junk is selected for you. **Review & Clean…** lists everything the scan found, by kind. If some leftovers of removed apps aren't selected because Tidy can't be sure about them, the report says how many.
 - **Trash:** **Open Trash** opens Finder's Trash, the same one the Dock opens, where you see what's in it and empty it. macOS keeps the Trash private from apps without Full Disk Access.
 - **Junk Mail:** **Mark Junk as Read** has Mail mark the unread messages in its Junk as read, in all your accounts, and says how many. Mail does the marking, so they show as read on your other devices too, and Tidy never opens Mail's files. If Mail isn't open, it opens.
 - **Protection:** "Nothing suspicious", or how many findings there are, with **Open Protection**.
 - **Apps:** which apps to remove is your call, so this points you to the Uninstaller.
 
+The list under **Review & Clean…** works like Quarantine's. Tick items one by one or a whole kind at once, or use **Select All**. **Clean Selected…** and **Clean All…** show exactly what moves, with sizes, before anything does. Right-click an item to reveal it in Finder, and **Report** goes back to the report.
+
 After cleaning, Smart Care shows how much was moved to Quarantine, with **Undo**. Its start screen shows when you last scanned, a reminder when a scan is due, and a new version of Tidy when there is one.
 
-### System Junk
-
-Finds what takes up space without doing anything useful, grouped by kind:
+The scan looks for what takes up space without doing anything useful, grouped by kind:
 
 - **Your apps' caches and logs**
 - **Package manager caches:** Homebrew, npm, Yarn, pnpm, pip, Cargo, Go, Gradle, CocoaPods, Conda
@@ -87,8 +87,6 @@ Everything else is listed for you to tick, and system junk is never selected for
 
 An app counts as installed wherever it is: in Applications, in your own Applications folder, or anywhere else Spotlight finds it, along with the extensions and helpers inside it. Files an app maker's apps share, such as updaters, stay while any app from that maker is installed. What Tidy can't be sure about is listed but not selected, because an app kept somewhere Tidy can't see looks removed. Removed apps' containers are left alone, because macOS asks before an app looks inside another app's container.
 
-Tick what you want, click **Review & Clean…**, check the list and confirm. The result screen has **Undo**.
-
 ### Uninstaller
 
 Removes an app together with everything it put on your Mac:
@@ -99,9 +97,9 @@ Removes an app together with everything it put on your Mac:
 - its files in `/Library` for all users
 - for apps installed with a .pkg, everything that package installed. Files other apps share are kept.
 
-The list includes iPhone and iPad apps installed on the Mac, and it updates as soon as an app is added to or removed from Applications. Sort the list by **Last Opened** to find apps you no longer use. Pick an app, check what was found, and click **Review & Remove…**. A running app has to be quit first (**Quit App**). Background helpers are stopped before they're removed, and started again if you undo.
+The list includes iPhone and iPad apps installed on the Mac, and it updates as soon as an app is added to or removed from Applications. Sort the list by **Last Opened** to find apps you no longer use. Pick an app and check what was found: tick items one by one, or use **Select All**. **Remove Selected…** and **Remove All…** show exactly what moves before anything does. A running app has to be quit first (**Quit App**). Background helpers are stopped before they're removed, and started again if you undo.
 
-What apps you already deleted left behind is in System Junk.
+Smart Care finds what apps you already deleted left behind.
 
 ### Updater
 
@@ -121,7 +119,7 @@ Checks what starts on its own (launch agents and daemons) and your browsers' set
 - scripts that download or decode code
 - browser settings forced by a profile, such as a locked search engine or extensions installed by policy, a common adware trick
 
-For each finding, **Reveal in Finder** shows it and **Move to Quarantine…** stops it from starting (you can undo that for 30 days). macOS's own items are never touched. Startup items whose program is gone start nothing, so they're listed in System Junk instead.
+For each finding, **Reveal in Finder** shows it and **Move to Quarantine…** stops it from starting (you can undo that for 30 days). macOS's own items are never touched. Startup items whose program is gone start nothing, so Smart Care lists them with the junk instead.
 
 Below the findings are two lists of who can watch you, each with an **Open** button:
 
@@ -135,7 +133,7 @@ Checks your files against Apple's own malware list: the XProtect rules macOS use
 - **Quick Scan:** Downloads, your apps, what starts at login or boot, and the shared and temporary folders
 - **Scan Folders or Files…:** only what you choose
 
-Each finding shows where it is and what it matched. **Move to Quarantine…** moves it where it can't run, and you can put it back if it was a mistake. The screen mentions Apple's list only if something is wrong with it. Files over 128 MB and files stored only in iCloud aren't read.
+Each finding shows where it is and what it matched. Tick findings or use **Select All**: **Quarantine Selected…** and **Quarantine All…** move them where they can't run, and you can put them back if it was a mistake. The screen mentions Apple's list only if something is wrong with it. Files over 128 MB and files stored only in iCloud aren't read.
 
 For advanced use, put your own YARA rules (`.yar`, `.yara`) and lists of known-bad SHA-256 hashes (`.txt`, `.csv`, `.tsv`, `.sha256`) in `~/Library/Application Support/Tidy/Signatures`. A file that can't be used is named on the screen. To test the scan safely, use the standard EICAR test file, which Tidy recognizes.
 

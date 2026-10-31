@@ -9,19 +9,25 @@ struct SmartCareView: View {
     @Binding var selection: Module?
     @ObservedObject var tidy = TidyUpdateModel.shared
     @Environment(\.openWindow) private var openWindow
-    @State private var reviewing: SmartCareReport?
+    @State private var reviewing: Review?
+
+    /// What the confirmation lists before anything moves, and the report it came from.
+    private struct Review {
+        let items: [ScanItem]
+        let report: SmartCareReport
+    }
 
     var body: some View {
         content
             .navigationTitle("Smart Care")
             .sheet(isPresented: reviewShown) {
-                if let report = reviewing {
+                if let review = reviewing {
                     ReviewSheet(title: "Clean this junk?",
                                 actionTitle: "Move to Quarantine",
-                                items: report.selectedCleanup,
+                                items: review.items,
                                 retentionDays: model.store.retentionDays) {
                         reviewing = nil
-                        model.clean(report)
+                        model.clean(review.items, from: review.report)
                     } onCancel: {
                         reviewing = nil
                     }
@@ -98,6 +104,8 @@ struct SmartCareView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         case .report(let report):
             reportView(report)
+        case .choosing(let report):
+            listView(report)
         case .cleaning:
             ProgressView("Moving junk to quarantine…")
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -155,34 +163,33 @@ struct SmartCareView: View {
     /// "3 more leftovers of removed apps (12 MB) aren't selected…"
     private func unsureText(_ items: [ScanItem], more: Bool) -> String {
         let what = items.count == 1 ? "leftover of removed apps isn't" : "leftovers of removed apps aren't"
-        return "\(items.count) \(more ? "more " : "")\(what) selected (\(ByteFormat.string(items.totalSize))), because Tidy can't be sure. Check them in System Junk."
+        return "\(items.count) \(more ? "more " : "")\(what) selected (\(ByteFormat.string(items.totalSize))), because Tidy can't be sure. Review & Clean… lists them to tick."
     }
 
     private func reportView(_ report: SmartCareReport) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 Card(title: "Cleanup", symbol: "trash.circle.fill", tint: .blue) {
+                    let selected = model.selectedCleanup
                     // What removed apps left that Tidy can't be sure about isn't selected, so it's named here.
-                    let unsure = report.cleanup.filter { !$0.isSelected && $0.category == LeftoverFinder.orphanCategory }
-                    if report.selectedCleanup.isEmpty && unsure.isEmpty {
+                    let unsure = model.cleanup.filter { !$0.isSelected && $0.category == LeftoverFinder.orphanCategory }
+                    if model.cleanup.isEmpty {
                         Text("No junk to clean.")
                             .foregroundStyle(.secondary)
-                    }
-                    if !report.selectedCleanup.isEmpty {
-                        Text("\(ByteFormat.string(report.selectedCleanup.totalSize)) of caches, logs, leftovers of removed apps and other junk in \(report.selectedCleanup.count) items.")
-                    }
-                    if !unsure.isEmpty {
-                        Text(unsureText(unsure, more: !report.selectedCleanup.isEmpty))
+                    } else if selected.isEmpty && unsure.isEmpty {
+                        Text("Nothing is selected for you. Review & Clean… lists what was found, such as caches in use, to tick yourself.")
                             .foregroundStyle(.secondary)
                     }
-                    if !report.selectedCleanup.isEmpty || !unsure.isEmpty {
-                        HStack {
-                            if !report.selectedCleanup.isEmpty {
-                                Button("Review & Clean…") { reviewing = report }
-                                    .keyboardShortcut(.defaultAction)
-                            }
-                            Button("Choose Items in System Junk") { selection = .systemJunk }
-                        }
+                    if !selected.isEmpty {
+                        Text("\(ByteFormat.string(selected.totalSize)) of caches, logs, leftovers of removed apps and other junk in \(selected.count) items.")
+                    }
+                    if !unsure.isEmpty {
+                        Text(unsureText(unsure, more: !selected.isEmpty))
+                            .foregroundStyle(.secondary)
+                    }
+                    if !model.cleanup.isEmpty {
+                        Button("Review & Clean…") { model.choose(report) }
+                            .keyboardShortcut(.defaultAction)
                     }
                 }
 
@@ -233,6 +240,45 @@ struct SmartCareView: View {
                 }
             }
             .padding(20)
+        }
+    }
+
+    /// Everything the scan found, by kind, to tick item by item before cleaning.
+    private func listView(_ report: SmartCareReport) -> some View {
+        VStack(spacing: 0) {
+            HStack {
+                Button { model.closeList(report) } label: {
+                    Label("Report", systemImage: "chevron.left")
+                }
+                Spacer()
+                Text("\(model.cleanup.count) items, \(ByteFormat.string(model.cleanup.totalSize)) in all")
+                    .foregroundStyle(.secondary)
+            }
+            .padding(12)
+            Divider()
+            List {
+                ForEach(model.cleanupGroups) { group in
+                    ItemGroupRow(group: group,
+                                 toggleItem: { model.toggle($0) },
+                                 setCategory: { model.setCategory($0, selected: $1) })
+                }
+            }
+            Divider()
+            SelectionBar(allSelected: model.allCleanupSelected,
+                         summary: model.selectedCleanup.selectionSummary(verb: "clean"),
+                         selectAll: { model.selectAll($0) }) {
+                Button("Clean Selected…") { reviewing = Review(items: model.selectedCleanup, report: report) }
+                    .keyboardShortcut(.defaultAction)
+                    .disabled(model.selectedCleanup.isEmpty)
+                Button("Clean All…") { reviewing = Review(items: model.cleanup, report: report) }
+            }
+            .padding(.horizontal, 12)
+            .padding(.top, 10)
+            Text("Caches used in the last 30 days, leftovers of removed apps Tidy can't be sure about and system junk aren't selected for you. What you clean waits in Quarantine for \(model.store.retentionDays) days, so you can put it back. Right-click an item to reveal it in Finder.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(12)
         }
     }
 }
