@@ -25,8 +25,8 @@ struct MenuBarMonitorView: View {
             ForEach(reminders.due) { due in
                 VStack(alignment: .leading, spacing: 6) {
                     Text(due.text)
-                    Button(due.scan == .malware ? "Open Malware Scan" : "Open Smart Care") {
-                        navigation.module = due.scan == .malware ? .malware : .smartCare
+                    Button(due.scan == .malware ? "Open Protection" : "Open Smart Care") {
+                        navigation.module = due.scan == .malware ? .protection : .smartCare
                         showMainWindow()
                     }
                 }

@@ -9,7 +9,7 @@ final class ProtectionModel: ObservableObject {
     @Published private(set) var findings: [Finding] = []
     @Published private(set) var isLoading = false
     @Published private(set) var hasLoaded = false
-    /// When the last check finished, so Scan Again visibly does something.
+    /// When the last check finished, so Check Again visibly does something.
     @Published private(set) var lastChecked: Date?
     @Published private(set) var notice: String?
     @Published var errorMessage: String?

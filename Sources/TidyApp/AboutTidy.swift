@@ -22,7 +22,7 @@ struct TidyHelpButton: View {
 }
 
 /// The About Tidy window: Tidy's name in large type with no icon, the version and build, what it does,
-/// links to its guide and release notes, the license of YARA, which Malware Scan runs on, and the copyright.
+/// links to its guide and release notes, the license of YARA, which the malware scan runs on, and the copyright.
 struct AboutTidyWindow: View {
     static let id = "about"
     static let guide = URL(string: "https://github.com/\(TidyRelease.repository)#readme")!
@@ -49,7 +49,7 @@ struct AboutTidyWindow: View {
                     Text("Acknowledgements")
                         .bold()
                     Group {
-                        Text("Malware Scan runs on YARA 4.5.4 by The YARA Authors, under this license:")
+                        Text("Tidy's malware scan runs on YARA 4.5.4 by The YARA Authors, under this license:")
                         Text(Self.yaraLicense)
                         Text("YARA's .NET module is under the Apache License 2.0, a copy of which comes with Tidy in Tidy.app/Contents/Resources.")
                     }

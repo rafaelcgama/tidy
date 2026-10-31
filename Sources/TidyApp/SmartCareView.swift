@@ -85,7 +85,7 @@ struct SmartCareView: View {
                         Image(systemName: "calendar.badge.clock")
                         Text(due.text)
                         if due.scan == .malware {
-                            Button("Open Malware Scan") { selection = .malware }
+                            Button("Open Protection") { selection = .protection }
                         }
                     }
                     .padding(10)

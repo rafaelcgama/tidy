@@ -149,7 +149,7 @@ func run(_ args: [String]) async throws -> Int32 {
             }
         }
         guard moving else {
-            print("\nNothing was changed. Move these to quarantine with tidy malware --quarantine, or from Tidy's Malware Scan screen.")
+            print("\nNothing was changed. Move these to quarantine with tidy malware --quarantine, or from the Protection tab in Tidy.")
             return 0
         }
         print("\nMove these \(report.threats.count) items to quarantine? They can be restored for \(store.retentionDays) days. Type yes to continue: ", terminator: "")
@@ -165,7 +165,7 @@ func run(_ args: [String]) async throws -> Int32 {
             print("Undo with: tidy restore \(batch.id)")
         }
         for skipped in result.skipped {
-            print("  not moved \(skipped.item.url.path): \(skipped.reason). Items that belong to root need Tidy's admin helper: use the Malware Scan screen.")
+            print("  not moved \(skipped.item.url.path): \(skipped.reason). Items that belong to root need Tidy's admin helper: use the Protection tab in Tidy.")
         }
         return 0
 
