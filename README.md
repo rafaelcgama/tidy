@@ -43,7 +43,7 @@ macOS may ask you four things while you use Tidy:
 - **Your administrator password**, when Tidy removes something that belongs to the whole Mac, such as system caches or an app's helper in `/Library`. The optional admin helper does that without asking (see Settings).
 - **Whether Tidy may look in Downloads**, the first time Smart Care or a malware scan does.
 - **Whether Tidy may control Finder**, the first time you click **Open Trash**, so that Finder opens the whole Trash, as the Dock does. If you don't allow it, Tidy opens your Trash folder, which shows only what you deleted on this Mac, not in iCloud Drive or on other disks.
-- **Whether Tidy may control Mail**, the first time you click **Mark Junk as Read**. If you don't allow it, Smart Care says where to turn it on later.
+- **Whether Tidy may control Mail**, the first time you click **Mark Junk and Trash as Read**. If you don't allow it, Smart Care says where to turn it on later.
 
 Because Tidy isn't signed with a Developer ID, macOS may ask the last three again after Tidy updates.
 
@@ -57,7 +57,7 @@ One scan for junk, login items and browser settings. The report shows:
 
 - **Cleanup:** how much junk is selected for you. **Review & Clean…** lists everything the scan found, by kind. If some leftovers of removed apps aren't selected because Tidy can't be sure about them, the report says how many.
 - **Trash:** **Open Trash** opens Finder's Trash, the same one the Dock opens, where you see what's in it and empty it. macOS keeps the Trash private from apps without Full Disk Access.
-- **Junk Mail:** **Mark Junk as Read** has Mail mark the unread messages in its Junk as read, in all your accounts, and says how many. Mail does the marking, so they show as read on your other devices too, and Tidy never opens Mail's files. If Mail isn't open, it opens.
+- **Junk and Trash Mail:** **Mark Junk and Trash as Read** has Mail mark the unread messages in its Junk and Trash as read, in all your accounts, and says how many. Mail does the marking, so they show as read on your other devices too, and Tidy never opens Mail's files. If Mail isn't open, it opens.
 - **Protection:** "Nothing suspicious", or how many findings there are, with **Open Protection**.
 - **Apps:** which apps to remove is your call, so this points you to the Uninstaller.
 
@@ -268,7 +268,7 @@ Included in the app at `Tidy.app/Contents/Helpers/tidy`, or run it with `swift r
 | Build | Swift Package Manager (`Package.swift`) and Xcode |
 | Malware engine | [libyara](https://github.com/VirusTotal/yara) 4.5.4 (C), included as source, running Apple's XProtect rules |
 | System frameworks | ServiceManagement (open at login, the admin helper, System Settings links), XPC (talking to the admin helper), Security (code signatures), CoreServices (when apps were last opened), CryptoKit (SHA-256), Combine |
-| macOS tools it runs | `launchctl` (stops and restarts startup items it moves), `pkgutil` (what an installer package put on the Mac), `mdfind` (apps installed outside Applications), `brew` (Homebrew updates), `osascript` (the administrator password prompt, asking Finder to open the Trash and asking Mail to mark junk as read), `hdiutil`, `codesign` and `ditto` (installing an update), `open` |
+| macOS tools it runs | `launchctl` (stops and restarts startup items it moves), `pkgutil` (what an installer package put on the Mac), `mdfind` (apps installed outside Applications), `brew` (Homebrew updates), `osascript` (the administrator password prompt, asking Finder to open the Trash and asking Mail to mark junk and trash as read), `hdiutil`, `codesign` and `ditto` (installing an update), `open` |
 | Packaging | `codesign` and `hdiutil`, optionally `notarytool` |
 | Releases | GitHub Actions |
 

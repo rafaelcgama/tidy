@@ -1,8 +1,8 @@
 import XCTest
 @testable import TidyCore
 
-/// Mark Junk as Read asks Mail to mark the unread junk in every account. A stand-in osascript takes the place of
-/// macOS's.
+/// Mark Junk and Trash as Read asks Mail to mark the unread messages in Junk and Trash, in every account. A stand-in
+/// osascript takes the place of macOS's.
 final class MailJunkTests: XCTestCase {
     var tmp: URL!
 
@@ -30,16 +30,18 @@ final class MailJunkTests: XCTestCase {
         return url
     }
 
-    func testAsksMailToMarkEveryAccountsJunkAsRead() throws {
+    func testAsksMailToMarkEveryAccountsJunkAndTrashAsRead() throws {
         XCTAssertEqual(MailJunk(osascript: try osascript(prints: "12\n")).markRead(), .marked(12))
         let passed = try String(contentsOf: tmp.appendingPathComponent("script.txt"), encoding: .utf8)
         XCTAssertEqual(passed, MailJunk.script.map { "-e\n\($0)\n" }.joined())
         XCTAssertEqual(MailJunk.script.first, "tell application id \"com.apple.mail\"")
         XCTAssertTrue(MailJunk.script.contains { $0.contains("every mailbox of junk mailbox") })
-        XCTAssertTrue(MailJunk.script.contains { $0.contains("set read status of every message of junkBox whose read status is false to true") })
+        XCTAssertTrue(MailJunk.script.contains { $0.contains("every mailbox of trash mailbox") })
+        XCTAssertTrue(MailJunk.script.contains { $0.contains("set end of theBoxes to trash mailbox") })
+        XCTAssertTrue(MailJunk.script.contains { $0.contains("set read status of every message of theBox whose read status is false to true") })
     }
 
-    func testSaysSoWhenJunkHasNothingUnread() throws {
+    func testSaysSoWhenJunkAndTrashHaveNothingUnread() throws {
         XCTAssertEqual(MailJunk(osascript: try osascript(prints: "0\n")).markRead(), .marked(0))
     }
 
