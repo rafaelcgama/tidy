@@ -3,7 +3,6 @@ import TidyCore
 
 enum Module: String, CaseIterable, Identifiable {
     case smartCare = "Smart Care"
-    case systemJunk = "System Junk"
     case uninstaller = "Uninstaller"
     case updater = "Updater"
     case protection = "Protection"
@@ -16,7 +15,6 @@ enum Module: String, CaseIterable, Identifiable {
     var symbol: String {
         switch self {
         case .smartCare: return "sparkles"
-        case .systemJunk: return "trash"
         case .uninstaller: return "xmark.app"
         case .updater: return "arrow.down.app"
         case .protection: return "checkmark.shield"
@@ -39,10 +37,6 @@ struct ContentView: View {
     let reminders: ReminderModel
     @ObservedObject var navigation: AppNavigation
     @StateObject private var smartCare = SmartCareModel()
-    @StateObject private var systemJunk = ScanCleanModel {
-        let scanner = CombinedScanner.systemJunk()
-        return (scanner, scanner.safePaths)
-    }
     @StateObject private var uninstaller = UninstallerModel()
     @StateObject private var protection = ProtectionModel()
     @StateObject private var malware = MalwareModel()
@@ -60,14 +54,6 @@ struct ContentView: View {
             switch navigation.module {
             case .some(.smartCare):
                 SmartCareView(model: smartCare, reminders: reminders, selection: $navigation.module)
-            case .some(.systemJunk):
-                ScanCleanView(model: systemJunk,
-                              copy: .init(title: "System Junk",
-                                          symbol: "trash.circle",
-                                          blurb: "Find what removed apps left behind, app and package caches (Homebrew, npm, pip…), logs, Xcode build files and simulators, old installers and other junk.",
-                                          note: "Caches used in the last 30 days aren't selected: they keep apps and installs fast, and removing them only means they're rebuilt. "
-                                              + "Old macOS installers, simulators Xcode can no longer run and installers in Downloads over a week old are selected. "
-                                              + "Of what removed apps left, only what can't matter is selected, such as startup items that start nothing: check the rest yourself."))
             case .some(.uninstaller):
                 UninstallerView(model: uninstaller)
             case .some(.updater):

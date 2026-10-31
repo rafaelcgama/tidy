@@ -4,7 +4,8 @@ import TidyCore
 
 struct UninstallerView: View {
     @ObservedObject var model: UninstallerModel
-    @State private var showingReview = false
+    /// What the confirmation lists before anything moves.
+    @State private var reviewing: [ScanItem]?
 
     var body: some View {
         HSplitView {
@@ -19,15 +20,17 @@ struct UninstallerView: View {
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             model.loadApps()
         }
-        .sheet(isPresented: $showingReview) {
-            ReviewSheet(title: "Remove \(model.selection?.name ?? "this app")?",
-                        actionTitle: "Move to Quarantine",
-                        items: model.selectedItems,
-                        retentionDays: model.store.retentionDays) {
-                showingReview = false
-                model.remove()
-            } onCancel: {
-                showingReview = false
+        .sheet(isPresented: reviewShown) {
+            if let items = reviewing {
+                ReviewSheet(title: "Remove \(model.selection?.name ?? "this app")?",
+                            actionTitle: "Move to Quarantine",
+                            items: items,
+                            retentionDays: model.store.retentionDays) {
+                    reviewing = nil
+                    model.remove(items)
+                } onCancel: {
+                    reviewing = nil
+                }
             }
         }
         .alert("Something went wrong", isPresented: errorShown) {
@@ -40,6 +43,10 @@ struct UninstallerView: View {
     private var errorShown: Binding<Bool> {
         Binding(get: { model.errorMessage != nil },
                 set: { if !$0 { model.errorMessage = nil } })
+    }
+
+    private var reviewShown: Binding<Bool> {
+        Binding(get: { reviewing != nil }, set: { if !$0 { reviewing = nil } })
     }
 
     private var appList: some View {
@@ -87,7 +94,7 @@ struct UninstallerView: View {
                     .foregroundColor(.accentColor)
                 Text("Pick an app to remove it and everything it put on your Mac.")
                 Text("Sort by Last Opened to find apps you no longer use.")
-                Text("What apps you already deleted left behind is in System Junk.")
+                Text("Smart Care finds what apps you already deleted left behind.")
             }
             .foregroundStyle(.secondary)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -167,12 +174,14 @@ struct UninstallerView: View {
                 }
             }
             Divider()
-            HStack {
-                Text("\(model.selectedItems.count) items selected · \(ByteFormat.string(model.selectedItems.totalSize))")
-                Spacer()
-                Button("Review & Remove…") { showingReview = true }
+            SelectionBar(allSelected: model.allSelected,
+                         summary: model.selectedItems.selectionSummary(verb: "remove"),
+                         selectAll: { model.selectAll($0) }) {
+                Button("Remove Selected…") { reviewing = model.selectedItems }
                     .keyboardShortcut(.defaultAction)
                     .disabled(model.selectedItems.isEmpty || model.isRunning)
+                Button("Remove All…") { reviewing = model.items }
+                    .disabled(model.items.isEmpty || model.isRunning)
             }
             .padding(12)
         }
