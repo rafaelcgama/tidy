@@ -2,90 +2,102 @@ import AppKit
 import SwiftUI
 import TidyCore
 
-/// What could start on its own or watch you: suspicious launch jobs and browser settings locked by a policy,
-/// plus shortcuts to the System Settings pages that list who may use the camera, microphone and screen.
+/// Everything that could harm your Mac or watch you: a malware scan against Apple's own list, suspicious launch
+/// jobs and browser settings locked by a policy, and shortcuts to the System Settings pages that list who may use
+/// the camera, microphone and screen.
 struct ProtectionView: View {
     @ObservedObject var model: ProtectionModel
+    @ObservedObject var malware: MalwareModel
+    @ObservedObject var reminders: ReminderModel
     @State private var pendingRemoval: Finding?
+    /// The threats the confirmation lists before anything moves.
+    @State private var reviewing: [ScanItem]?
     @State private var browsers: [Browser] = []
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(summary)
-                        .font(.headline)
-                    if let checked = model.lastChecked {
-                        Text("Checked \(model.items.count) startup items at \(checked.formatted(date: .omitted, time: .shortened)).")
+            List {
+                Section {
+                    MalwareSection(model: malware, reminders: reminders)
+                } header: {
+                    SectionTitle(title: "Malware",
+                                 detail: "Checks your files against Apple's own malware list, the one macOS uses, which Apple keeps up to date.")
+                }
+                Section("Startup items and browser settings") {
+                    HStack(spacing: 12) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(summary)
+                                .font(.headline)
+                            Text(startupDetail)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        Spacer()
+                        if model.isLoading {
+                            ProgressView()
+                                .controlSize(.small)
+                        }
+                        Button("Check Again") { model.refresh() }
+                            .disabled(model.isLoading)
+                    }
+                    .padding(.vertical, 4)
+                    ForEach(model.findings) { finding in
+                        FindingRow(finding: finding,
+                                   canRemove: model.canRemove(finding.url),
+                                   reveal: { model.reveal(finding.url) },
+                                   remove: { pendingRemoval = finding })
+                    }
+                }
+                Section {
+                    ForEach(Self.privacyPages) { page in
+                        OpenRow(title: page.title, detail: page.detail, button: "Open") {
+                            Image(systemName: page.symbol)
+                                .foregroundColor(.white)
+                                .frame(width: 26, height: 26)
+                                .background(RoundedRectangle(cornerRadius: 6).fill(page.tint))
+                        } action: {
+                            model.open(page.url)
+                        }
+                    }
+                } header: {
+                    SectionTitle(title: "Apps that can watch you or control your Mac",
+                                 detail: "Listed in System Settings. Turn off any you don't recognize.")
+                }
+                if !browsers.isEmpty {
+                    Section {
+                        ForEach(browsers) { browser in
+                            OpenRow(title: browser.name, detail: browser.hint, button: "Open") {
+                                Image(nsImage: NSWorkspace.shared.icon(forFile: browser.app.path))
+                                    .resizable()
+                                    .frame(width: 26, height: 26)
+                            } action: {
+                                model.open(browser)
+                            }
+                        }
+                    } header: {
+                        SectionTitle(title: "Websites that can watch you",
+                                     detail: "Listed in each browser. Remove any site you don't recognize.")
+                    } footer: {
+                        Text("Lists Chrome, Firefox, Edge and Brave when they're on your Mac.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
                 }
-                Spacer()
-                if model.isLoading {
-                    ProgressView()
-                        .controlSize(.small)
-                }
-                Button("Scan Again") { model.refresh() }
-                    .disabled(model.isLoading)
             }
-            .padding(12)
-            Divider()
-            if model.isLoading && !model.hasLoaded {
-                ProgressView("Checking startup items…")
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else {
-                List {
-                    Section("Startup items and browser settings") {
-                        if model.findings.isEmpty {
-                            Label("Nothing suspicious found. Tidy checks how things start on your Mac, who signed the programs they run, and whether your browser settings are locked. It doesn't replace macOS's built-in XProtect.",
-                                  systemImage: "checkmark.shield")
-                                .foregroundStyle(.secondary)
-                                .padding(.vertical, 4)
-                        }
-                        ForEach(model.findings) { finding in
-                            FindingRow(finding: finding,
-                                       canRemove: model.canRemove(finding.url),
-                                       reveal: { model.reveal(finding.url) },
-                                       remove: { pendingRemoval = finding })
-                        }
-                    }
-                    Section {
-                        ForEach(Self.privacyPages) { page in
-                            OpenRow(title: page.title, detail: page.detail, button: "Open") {
-                                Image(systemName: page.symbol)
-                                    .foregroundColor(.white)
-                                    .frame(width: 26, height: 26)
-                                    .background(RoundedRectangle(cornerRadius: 6).fill(page.tint))
-                            } action: {
-                                model.open(page.url)
-                            }
-                        }
-                    } header: {
-                        SectionTitle(title: "Apps that can watch you or control your Mac",
-                                     detail: "Listed in System Settings. Turn off any you don't recognize.")
-                    }
-                    if !browsers.isEmpty {
-                        Section {
-                            ForEach(browsers) { browser in
-                                OpenRow(title: browser.name, detail: browser.hint, button: "Open") {
-                                    Image(nsImage: NSWorkspace.shared.icon(forFile: browser.app.path))
-                                        .resizable()
-                                        .frame(width: 26, height: 26)
-                                } action: {
-                                    model.open(browser)
-                                }
-                            }
-                        } header: {
-                            SectionTitle(title: "Websites that can watch you",
-                                         detail: "Listed in each browser. Remove any site you don't recognize.")
-                        } footer: {
-                            Text("Lists Chrome, Firefox, Edge and Brave when they're on your Mac.")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
+            // Under the list, as in Quarantine, while a scan's threats are listed.
+            if malware.showsThreats {
+                Divider()
+                SelectionBar(allSelected: malware.allSelected,
+                             summary: malware.selectedItems.selectionSummary(verb: "quarantine"),
+                             selectAll: { malware.selectAll($0) }) {
+                    Button("Quarantine Selected…") { reviewing = malware.selectedItems }
+                        .keyboardShortcut(.defaultAction)
+                        .disabled(malware.selectedItems.isEmpty)
+                    Button("Quarantine All…") { reviewing = malware.threats.map(\.scanItem) }
                 }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
             }
             if let notice = model.notice {
                 Divider()
@@ -100,7 +112,21 @@ struct ProtectionView: View {
         .navigationTitle("Protection")
         .onAppear {
             if !model.hasLoaded { model.refresh() }
+            if malware.sources == nil { malware.loadSignatures() }
             browsers = Browser.installed()
+        }
+        .sheet(isPresented: reviewShown) {
+            if let items = reviewing {
+                ReviewSheet(title: "Move these threats to quarantine?",
+                            actionTitle: "Move to Quarantine",
+                            items: items,
+                            retentionDays: malware.store.retentionDays) {
+                    reviewing = nil
+                    malware.clean(items)
+                } onCancel: {
+                    reviewing = nil
+                }
+            }
         }
         .confirmationDialog("Stop this from starting at login?",
                             isPresented: removalShown,
@@ -114,7 +140,7 @@ struct ProtectionView: View {
         .alert("Something went wrong", isPresented: errorShown) {
             Button("OK", role: .cancel) {}
         } message: {
-            Text(model.errorMessage ?? "")
+            Text(model.errorMessage ?? malware.errorMessage ?? "")
         }
     }
 
@@ -122,6 +148,12 @@ struct ProtectionView: View {
         if !model.hasLoaded { return "Checking…" }
         if model.findings.isEmpty { return "Nothing suspicious" }
         return "\(model.findings.count) findings, \(model.dangerCount) serious"
+    }
+
+    private var startupDetail: String {
+        let what = "Looks at how things start on your Mac, who signed the programs they run, and whether your browser settings are locked."
+        guard let checked = model.lastChecked else { return what }
+        return what + " Checked \(model.items.count) startup items at \(checked.formatted(date: .omitted, time: .shortened))."
     }
 
     /// A System Settings page under Privacy & Security. macOS lists there who may use what; Tidy would need
@@ -153,9 +185,13 @@ struct ProtectionView: View {
         Binding(get: { pendingRemoval != nil }, set: { if !$0 { pendingRemoval = nil } })
     }
 
+    private var reviewShown: Binding<Bool> {
+        Binding(get: { reviewing != nil }, set: { if !$0 { reviewing = nil } })
+    }
+
     private var errorShown: Binding<Bool> {
-        Binding(get: { model.errorMessage != nil },
-                set: { if !$0 { model.errorMessage = nil } })
+        Binding(get: { model.errorMessage != nil || malware.errorMessage != nil },
+                set: { if !$0 { model.errorMessage = nil; malware.errorMessage = nil } })
     }
 }
 

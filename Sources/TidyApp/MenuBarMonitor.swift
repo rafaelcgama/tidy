@@ -25,8 +25,8 @@ struct MenuBarMonitorView: View {
             ForEach(reminders.due) { due in
                 VStack(alignment: .leading, spacing: 6) {
                     Text(due.text)
-                    Button(due.scan == .malware ? "Open Malware Scan" : "Open Smart Care") {
-                        navigation.module = due.scan == .malware ? .malware : .smartCare
+                    Button(due.scan == .malware ? "Open Protection" : "Open Smart Care") {
+                        navigation.module = due.scan == .malware ? .protection : .smartCare
                         showMainWindow()
                     }
                 }
@@ -62,7 +62,7 @@ struct MenuBarMonitorView: View {
             HStack {
                 Button("Open Tidy") { showMainWindow() }
                 Spacer()
-                // Tidy has no menus of its own while it lives in the menu bar, so their items are here.
+                // Tidy has no menus while its window is closed, so their items are here too.
                 Menu {
                     SettingsButton()
                     CheckForUpdatesButton()

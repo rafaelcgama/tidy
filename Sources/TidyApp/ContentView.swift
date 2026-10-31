@@ -6,7 +6,6 @@ enum Module: String, CaseIterable, Identifiable {
     case uninstaller = "Uninstaller"
     case updater = "Updater"
     case protection = "Protection"
-    case malware = "Malware Scan"
     case performance = "Performance"
     case quarantine = "Quarantine"
 
@@ -18,7 +17,6 @@ enum Module: String, CaseIterable, Identifiable {
         case .uninstaller: return "xmark.app"
         case .updater: return "arrow.down.app"
         case .protection: return "checkmark.shield"
-        case .malware: return "ladybug"
         case .performance: return "speedometer"
         case .quarantine: return "arrow.uturn.backward.circle"
         }
@@ -59,9 +57,7 @@ struct ContentView: View {
             case .some(.updater):
                 UpdaterView(model: updater)
             case .some(.protection):
-                ProtectionView(model: protection)
-            case .some(.malware):
-                MalwareView(model: malware, reminders: reminders)
+                ProtectionView(model: protection, malware: malware, reminders: reminders)
             case .some(.performance):
                 PerformanceView(monitor: monitor, selection: $navigation.module)
             case .some(.quarantine):

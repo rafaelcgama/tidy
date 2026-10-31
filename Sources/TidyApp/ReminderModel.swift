@@ -2,7 +2,7 @@ import AppKit
 import Combine
 import TidyCore
 
-/// The scan reminders, for Smart Care, Malware Scan, Settings and the menu bar panel. It never scans
+/// The scan reminders, for Smart Care, Protection, Settings and the menu bar panel. It never scans
 /// and never sends notifications: a due reminder only shows inside Tidy, and you start the scan yourself.
 @MainActor
 final class ReminderModel: ObservableObject {

@@ -20,7 +20,7 @@ curl -fL -o ~/Downloads/Tidy.dmg https://github.com/rafaelcgama/clean-my-mac/rel
 
 ### Update
 
-Tidy checks for a new version when it starts, and Smart Care and the menu bar panel say when one is out. To check now, choose **Check for Updates…** from the ⚙ menu in the menu bar panel. The Software Update window shows what's new. **Install Update** downloads the new Tidy, checks it, replaces the old one and opens it again. Nothing is installed until you click, and your settings and Quarantine are kept.
+Tidy checks for a new version when it starts, and Smart Care and the menu bar panel say when one is out. To check now, choose **Tidy › Check for Updates…** while Tidy's window is open, or **Check for Updates…** from the ⚙ menu in the menu bar panel. The Software Update window shows what's new. **Install Update** downloads the new Tidy, checks it, replaces the old one and opens it again. Nothing is installed until you click, and your settings and Quarantine are kept.
 
 ### Uninstall
 
@@ -41,7 +41,7 @@ Tidy checks for a new version when it starts, and Smart Care and the menu bar pa
 macOS may ask you four things while you use Tidy:
 
 - **Your administrator password**, when Tidy removes something that belongs to the whole Mac, such as system caches or an app's helper in `/Library`. The optional admin helper does that without asking (see Settings).
-- **Whether Tidy may look in Downloads**, the first time Smart Care or Malware Scan does.
+- **Whether Tidy may look in Downloads**, the first time Smart Care or a malware scan does.
 - **Whether Tidy may control Finder**, the first time you click **Open Trash**, so that Finder opens the whole Trash, as the Dock does. If you don't allow it, Tidy opens your Trash folder, which shows only what you deleted on this Mac, not in iCloud Drive or on other disks.
 - **Whether Tidy may control Mail**, the first time you click **Mark Junk as Read**. If you don't allow it, Smart Care says where to turn it on later.
 
@@ -49,7 +49,7 @@ Because Tidy isn't signed with a Developer ID, macOS may ask the last three agai
 
 ## The tabs
 
-Each of the seven tabs in the sidebar does one job.
+Each of the six tabs in the sidebar does one job.
 
 ### Smart Care
 
@@ -112,7 +112,18 @@ The list refreshes after each update. App Store apps are left to the App Store, 
 
 ### Protection
 
-Checks what starts on its own (launch agents and daemons) and your browsers' settings, and flags, with the reason:
+Everything that could harm your Mac or watch you, on one screen.
+
+**Malware** checks your files against Apple's own malware list: the XProtect rules macOS uses, which Apple keeps up to date. Tidy reads them from your Mac and runs them with the YARA engine.
+
+- **Quick Scan:** Downloads, your apps, what starts at login or boot, and the shared and temporary folders
+- **Scan Folders or Files…:** only what you choose
+
+Each threat shows where it is and what it matched. Tick threats or use **Select All** in the bar under the list: **Quarantine Selected…** and **Quarantine All…** move them where they can't run, and you can put them back if it was a mistake. Apple's list is mentioned only if something is wrong with it. Files over 128 MB and files stored only in iCloud aren't read.
+
+For advanced use, put your own YARA rules (`.yar`, `.yara`) and lists of known-bad SHA-256 hashes (`.txt`, `.csv`, `.tsv`, `.sha256`) in `~/Library/Application Support/Tidy/Signatures`. A file that can't be used is named on the screen. To test the scan safely, use the standard EICAR test file, which Tidy recognizes.
+
+**Startup items and browser settings** are checked each time you open Protection, and **Check Again** checks once more. Tidy looks at what starts on its own (launch agents and daemons) and at your browsers' settings, and flags, with the reason:
 
 - programs not signed by a developer Apple knows, or changed after they were signed
 - programs that run from hidden, temporary or shared folders
@@ -121,21 +132,10 @@ Checks what starts on its own (launch agents and daemons) and your browsers' set
 
 For each finding, **Reveal in Finder** shows it and **Move to Quarantine…** stops it from starting (you can undo that for 30 days). macOS's own items are never touched. Startup items whose program is gone start nothing, so Smart Care lists them with the junk instead.
 
-Below the findings are two lists of who can watch you, each with an **Open** button:
+Below them are two lists of who can watch you, each with an **Open** button:
 
 - **Apps that can watch you or control your Mac:** the System Settings pages for Camera, Microphone, Screen Recording, Input Monitoring and Accessibility, where you see which apps have access and can turn it off
 - **Websites that can watch you:** the page in Chrome, Firefox, Edge and Brave, when they're installed, that lists the sites allowed to use your camera, microphone, location, notifications and more
-
-### Malware Scan
-
-Checks your files against Apple's own malware list: the XProtect rules macOS uses, which Apple keeps up to date. Tidy reads them from your Mac and runs them with the YARA engine.
-
-- **Quick Scan:** Downloads, your apps, what starts at login or boot, and the shared and temporary folders
-- **Scan Folders or Files…:** only what you choose
-
-Each finding shows where it is and what it matched. Tick findings or use **Select All**: **Quarantine Selected…** and **Quarantine All…** move them where they can't run, and you can put them back if it was a mistake. The screen mentions Apple's list only if something is wrong with it. Files over 128 MB and files stored only in iCloud aren't read.
-
-For advanced use, put your own YARA rules (`.yar`, `.yara`) and lists of known-bad SHA-256 hashes (`.txt`, `.csv`, `.tsv`, `.sha256`) in `~/Library/Application Support/Tidy/Signatures`. A file that can't be used is named on the screen. To test the scan safely, use the standard EICAR test file, which Tidy recognizes.
 
 ### Performance
 
@@ -161,18 +161,18 @@ Entries older than 30 days are deleted for good the next time Tidy starts.
 
 ### Menu bar
 
-Tidy lives in the menu bar, like other menu bar apps: it shows CPU and RAM use there and has no Dock icon, even while its window is open. Click it to see CPU, RAM and Hard Drive with a bar each, any reminder that's due, a new version of Tidy when there is one, **Open Tidy**, **Quit Tidy** and a ⚙ menu with:
+Tidy lives in the menu bar, like other menu bar apps: it shows CPU and RAM use there. Click it to see CPU, RAM and Hard Drive with a bar each, any reminder that's due, a new version of Tidy when there is one, **Open Tidy**, **Quit Tidy** and a ⚙ menu with:
 
 - **Settings…** (see below)
 - **Check for Updates…** (see [Update](#update))
 - **Tidy Help**, which opens this guide
 - **About Tidy:** the version and build you have, links to this guide and the release notes, and the licenses of the code Tidy includes
 
-Closing Tidy's window keeps it running in the menu bar, and when Tidy opens at login it starts there, with no window.
+While Tidy's window is open, Tidy is also in the Dock and has its menus at the top of the screen, like any app. Closing the window takes it out of the Dock and keeps it running in the menu bar, and when Tidy opens at login it starts there, with no window.
 
 ### Menus
 
-With the menu bar monitor turned off (**Settings › General**), Tidy is an ordinary app instead: it's in the Dock, the items of the ⚙ menu are in its **Tidy** and **Help** menus, and closing its window quits it.
+While Tidy's window is open, the **Tidy** menu has **About Tidy**, **Check for Updates…** and **Settings…**, and **Help › Tidy Help** opens this guide. With the menu bar monitor turned off (**Settings › General**), Tidy is an ordinary app: it's in the Dock while it runs, and closing its window quits it.
 
 ### Settings
 
@@ -201,7 +201,7 @@ cd clean-my-mac
 open Package.swift
 ```
 
-In Xcode, choose the **TidyApp** scheme and **My Mac**, then press ⌘R. Xcode runs whatever branch is checked out. Runs from Xcode have no app bundle, so they show in the Dock as a plain program (exec), with Tidy's menus, while the installed Tidy lives in the menu bar only.
+In Xcode, choose the **TidyApp** scheme and **My Mac**, then press ⌘R. Xcode runs whatever branch is checked out. Runs from Xcode have no app bundle, so they show in the Dock as a plain program (exec) even with the window closed, while the installed Tidy leaves the Dock when its window closes.
 
 ### Test
 
@@ -280,4 +280,4 @@ There are no third-party dependencies besides libyara.
 
 ### Acknowledgements
 
-Malware Scan runs on [YARA](https://virustotal.github.io/yara/) 4.5.4 by The YARA Authors, under the BSD 3-Clause License. One of its modules is under the Apache License 2.0. Both licenses are in `Sources/CYara/NOTICE.md` and ship inside Tidy.app, and About Tidy shows YARA's.
+Tidy's malware scan runs on [YARA](https://virustotal.github.io/yara/) 4.5.4 by The YARA Authors, under the BSD 3-Clause License. One of its modules is under the Apache License 2.0. Both licenses are in `Sources/CYara/NOTICE.md` and ship inside Tidy.app, and About Tidy shows YARA's.
