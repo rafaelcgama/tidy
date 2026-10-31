@@ -29,7 +29,7 @@
 	<key>LSUIElement</key>
 	<true/>
 	<key>NSAppleEventsUsageDescription</key>
-	<string>Tidy asks Finder to open the Trash when you click Open Trash, and Mail to mark your junk as read when you click Mark Junk as Read.</string>
+	<string>Tidy asks Finder to open the Trash when you click Open Trash, and Mail to mark your junk and trash as read when you click Mark Junk and Trash as Read.</string>
 	<key>NSHighResolutionCapable</key>
 	<true/>
 	<key>NSHumanReadableCopyright</key>

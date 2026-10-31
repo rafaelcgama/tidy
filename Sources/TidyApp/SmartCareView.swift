@@ -142,21 +142,21 @@ struct SmartCareView: View {
     private var mailJunkText: some View {
         switch model.mailJunk {
         case .ready:
-            Text("Marks the unread messages in Mail's Junk as read, in all your accounts.")
+            Text("Marks the unread messages in Mail's Junk and Trash as read, in all your accounts.")
                 .foregroundStyle(.secondary)
         case .marking:
-            Text("Mail is marking your junk as read…")
+            Text("Mail is marking your junk and trash as read…")
                 .foregroundStyle(.secondary)
         case .finished(.marked(0)):
-            Text("Mail's Junk has no unread messages.")
+            Text("Mail's Junk and Trash have no unread messages.")
         case .finished(.marked(1)):
-            Text("Marked 1 junk message as read.")
+            Text("Marked 1 message in Junk and Trash as read.")
         case .finished(.marked(let count)):
-            Text("Marked \(count) junk messages as read.")
+            Text("Marked \(count) messages in Junk and Trash as read.")
         case .finished(.notAllowed):
             Text("macOS doesn't let Tidy control Mail. Turn on Mail under Tidy in Privacy & Security › Automation.")
         case .finished(.failed(let reason)):
-            Text("Mail didn't mark the junk as read. \(reason)")
+            Text("Mail didn't mark the junk and trash as read. \(reason)")
         }
     }
 
@@ -200,11 +200,11 @@ struct SmartCareView: View {
                     Button("Open Trash") { FinderTrash.show() }
                 }
 
-                // Mail marks the junk itself, in each account and on each account's server.
-                Card(title: "Junk Mail", symbol: "xmark.bin.fill", tint: .brown) {
+                // Mail marks the messages itself, in each account and on each account's server.
+                Card(title: "Junk and Trash Mail", symbol: "xmark.bin.fill", tint: .brown) {
                     mailJunkText
                     HStack {
-                        Button("Mark Junk as Read") { model.markMailJunkRead() }
+                        Button("Mark Junk and Trash as Read") { model.markMailJunkRead() }
                             .disabled(model.mailJunk == .marking)
                         if model.mailJunk == .marking {
                             ProgressView()

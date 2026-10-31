@@ -14,7 +14,7 @@ final class SmartCareModel: ObservableObject {
         case done(CleanResult)
     }
 
-    /// The Junk Mail card: whether Mail is marking the junk, and what came of it.
+    /// The Junk and Trash Mail card: whether Mail is marking the messages, and what came of it.
     enum MailJunkStatus: Equatable {
         case ready
         case marking
@@ -125,7 +125,7 @@ final class SmartCareModel: ObservableObject {
         phase = .idle
     }
 
-    /// Asks Mail to mark the unread junk in every account as read.
+    /// Asks Mail to mark the unread messages in Junk and Trash, in every account, as read.
     func markMailJunkRead() {
         mailJunk = .marking
         Task {
