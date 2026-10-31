@@ -14,7 +14,7 @@ public struct TidyRelease: Equatable, Sendable {
     public let downloadURL: URL
     public let pageURL: URL
 
-    public static let repository = "rafaelcgama/clean-my-mac"
+    public static let repository = "rafaelcgama/tidy"
     public static let latestURL = URL(string: "https://api.github.com/repos/\(repository)/releases/latest")!
     public static let diskImageName = "Tidy.dmg"
 

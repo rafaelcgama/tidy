@@ -112,7 +112,7 @@ final class UpdaterTests: XCTestCase {
     // Objective-C's -release, which crashed the whole test run.
     let releaseJSON = Data("""
     {"tag_name": "build-202610291200", "name": "Tidy 1.1.0", "body": "Simpler Performance tab\\n\\n",
-     "html_url": "https://github.com/rafaelcgama/clean-my-mac/releases/tag/build-202610291200",
+     "html_url": "https://github.com/rafaelcgama/tidy/releases/tag/build-202610291200",
      "assets": [{"name": "notes.txt", "browser_download_url": "https://example.invalid/notes.txt"},
                 {"name": "Tidy.dmg", "browser_download_url": "https://example.invalid/Tidy.dmg"}]}
     """.utf8)

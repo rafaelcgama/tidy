@@ -6,7 +6,7 @@ Tidy is a native Mac app for macOS 13 Ventura or later, on Apple silicon and Int
 
 ## Install
 
-1. Download [**Tidy.dmg**](https://github.com/rafaelcgama/clean-my-mac/releases/latest/download/Tidy.dmg) from the latest [release](https://github.com/rafaelcgama/clean-my-mac/releases).
+1. Download [**Tidy.dmg**](https://github.com/rafaelcgama/tidy/releases/latest/download/Tidy.dmg) from the latest [release](https://github.com/rafaelcgama/tidy/releases).
 2. Open it and drag **Tidy** onto **Applications**. Then eject the Tidy disk (⏏ next to it in Finder's sidebar).
 3. Open Tidy from Applications.
 
@@ -15,7 +15,7 @@ The first time you open it, macOS says it can't check Tidy for malware, because 
 If you'd rather use Terminal, this downloads and opens the disk image without that warning:
 
 ```sh
-curl -fL -o ~/Downloads/Tidy.dmg https://github.com/rafaelcgama/clean-my-mac/releases/latest/download/Tidy.dmg && open ~/Downloads/Tidy.dmg
+curl -fL -o ~/Downloads/Tidy.dmg https://github.com/rafaelcgama/tidy/releases/latest/download/Tidy.dmg && open ~/Downloads/Tidy.dmg
 ```
 
 ### Update
@@ -196,8 +196,8 @@ While Tidy's window is open, the **Tidy** menu has **About Tidy**, **Check for U
 ### Run from source
 
 ```sh
-git clone https://github.com/rafaelcgama/clean-my-mac.git
-cd clean-my-mac
+git clone https://github.com/rafaelcgama/tidy.git
+cd tidy
 open Package.swift
 ```
 
