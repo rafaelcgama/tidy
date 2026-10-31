@@ -20,7 +20,7 @@ struct SettingsView: View {
     }
 }
 
-/// Settings…, in the menu bar panel's ⚙ menu: while Tidy lives in the menu bar it has no Tidy menu to hold it.
+/// Settings…, in the menu bar panel's ⚙ menu: while Tidy's window is closed it has no Tidy menu to hold it.
 struct SettingsButton: View {
     var body: some View {
         if #available(macOS 14, *) {

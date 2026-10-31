@@ -20,7 +20,7 @@ curl -fL -o ~/Downloads/Tidy.dmg https://github.com/rafaelcgama/clean-my-mac/rel
 
 ### Update
 
-Tidy checks for a new version when it starts, and Smart Care and the menu bar panel say when one is out. To check now, choose **Check for Updates…** from the ⚙ menu in the menu bar panel. The Software Update window shows what's new. **Install Update** downloads the new Tidy, checks it, replaces the old one and opens it again. Nothing is installed until you click, and your settings and Quarantine are kept.
+Tidy checks for a new version when it starts, and Smart Care and the menu bar panel say when one is out. To check now, choose **Tidy › Check for Updates…** while Tidy's window is open, or **Check for Updates…** from the ⚙ menu in the menu bar panel. The Software Update window shows what's new. **Install Update** downloads the new Tidy, checks it, replaces the old one and opens it again. Nothing is installed until you click, and your settings and Quarantine are kept.
 
 ### Uninstall
 
@@ -161,18 +161,18 @@ Entries older than 30 days are deleted for good the next time Tidy starts.
 
 ### Menu bar
 
-Tidy lives in the menu bar, like other menu bar apps: it shows CPU and RAM use there and has no Dock icon, even while its window is open. Click it to see CPU, RAM and Hard Drive with a bar each, any reminder that's due, a new version of Tidy when there is one, **Open Tidy**, **Quit Tidy** and a ⚙ menu with:
+Tidy lives in the menu bar, like other menu bar apps: it shows CPU and RAM use there. Click it to see CPU, RAM and Hard Drive with a bar each, any reminder that's due, a new version of Tidy when there is one, **Open Tidy**, **Quit Tidy** and a ⚙ menu with:
 
 - **Settings…** (see below)
 - **Check for Updates…** (see [Update](#update))
 - **Tidy Help**, which opens this guide
 - **About Tidy:** the version and build you have, links to this guide and the release notes, and the licenses of the code Tidy includes
 
-Closing Tidy's window keeps it running in the menu bar, and when Tidy opens at login it starts there, with no window.
+While Tidy's window is open, Tidy is also in the Dock and has its menus at the top of the screen, like any app. Closing the window takes it out of the Dock and keeps it running in the menu bar, and when Tidy opens at login it starts there, with no window.
 
 ### Menus
 
-With the menu bar monitor turned off (**Settings › General**), Tidy is an ordinary app instead: it's in the Dock, the items of the ⚙ menu are in its **Tidy** and **Help** menus, and closing its window quits it.
+While Tidy's window is open, the **Tidy** menu has **About Tidy**, **Check for Updates…** and **Settings…**, and **Help › Tidy Help** opens this guide. With the menu bar monitor turned off (**Settings › General**), Tidy is an ordinary app: it's in the Dock while it runs, and closing its window quits it.
 
 ### Settings
 
@@ -201,7 +201,7 @@ cd clean-my-mac
 open Package.swift
 ```
 
-In Xcode, choose the **TidyApp** scheme and **My Mac**, then press ⌘R. Xcode runs whatever branch is checked out. Runs from Xcode have no app bundle, so they show in the Dock as a plain program (exec), with Tidy's menus, while the installed Tidy lives in the menu bar only.
+In Xcode, choose the **TidyApp** scheme and **My Mac**, then press ⌘R. Xcode runs whatever branch is checked out. Runs from Xcode have no app bundle, so they show in the Dock as a plain program (exec) even with the window closed, while the installed Tidy leaves the Dock when its window closes.
 
 ### Test
 

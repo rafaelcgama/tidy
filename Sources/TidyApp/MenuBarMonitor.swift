@@ -62,7 +62,7 @@ struct MenuBarMonitorView: View {
             HStack {
                 Button("Open Tidy") { showMainWindow() }
                 Spacer()
-                // Tidy has no menus of its own while it lives in the menu bar, so their items are here.
+                // Tidy has no menus while its window is closed, so their items are here too.
                 Menu {
                     SettingsButton()
                     CheckForUpdatesButton()
